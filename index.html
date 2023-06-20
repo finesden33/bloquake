@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8" />
+	<title>Bloquake</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<meta name="title" content="Bloquake"/>
+	<meta name="description" content="Smash boxes and foes to progress through the stages!"/>
+	<meta name="keywords" content="bloquake, smash, boxes, ethan fine, finesden"/>
+	<meta name="author" content="Ethan S. Fine"/>
+	<meta name="og:title" content="Bloquake"/>
+	<meta name="og:description" content="Smash boxes and foes to progress through the stages!"/>
+	<meta name="og:image" content="https://finesden.com/bloquake/bloquake_preview.jpg"/>
+	<meta name="og:image:width" content="800"/>
+	<meta name="og:image:height" content="400"/>
+	<meta name="og:site_name" content="Bloquake"/>
+	<meta name="og:type" content="website"/>
+	<meta name="og:url" content="https://finesden.com/bloquake/"/>
+	<meta name="og:pubdate" content="2020-04-05T15:32:59.453Z"/>
+	<meta name="twitter:title" content="Bloquake"/>
+	<meta name="twitter:description" content="Smash boxes and foes to progress through the stages!"/>
+	<meta name="twitter:image" content="https://finesden.com/bloquake/bloquake_preview.jpg"/>
+	<meta name="twitter:card" content="summary_large_image"/>
+	<meta name="twitter:image:alt" content="Bloquake"/>
+	<meta itemprop="name" content="Bloquake"/>
+	<meta itemprop="description" content="Smash boxes and foes to progress through the stages!"/>
+	<meta name="theme-color" content="black"/>
+	<link rel="icon" type="image/png" href="assets/9d453875-5881-4d4d-9b6e-3359c045fdfc.png"/>
+	<link rel="stylesheet" type="text/css" href="styleSheet.css"/>
+	<script src="//code.jquery.com/jquery-1.12.1.min.js" class="external"></script>
+	<script src="gamelab-api__b82a42ae1dad023fdacca0736fce8fa8ba957972.js"></script>
+	<script src="p5__b82a42ae1dad023fdacca0736fce8fa8ba957972.js"></script>
+	<script src="p5.play__b82a42ae1dad023fdacca0736fce8fa8ba957972.js"></script>
+	<script src="code__b82a42ae1dad023fdacca0736fce8fa8ba957972.js"></script>
+	<script type="text/javascript">
+		window.addEventListener("keydown", function(e) {
+			if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+				e.preventDefault();
+			}
+		}, false);
+	</script>
+	</head>
+	<body>
+	<div class="container web">
+		<div id="sketch" class="web"><div class="loader"><img src="./box_jump.gif" id="xp5_loading"/></div></div>
+		<div id="soft-buttons" class="soft-buttons-none">
+			<button id="leftButton" disabled className="arrow"></button>
+			<button id="rightButton" disabled className="arrow"></button>
+			<button id="upButton" disabled className="arrow"></button>
+			<button id="downButton" disabled className="arrow"></button>
+		</div>
+		<div id="studio-dpad-container"></div>
+	</div>
+	<a href="Bloquake Dev log.txt" class="changelog"></a>
+</body>
+</html>

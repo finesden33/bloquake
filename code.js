@@ -102,6 +102,7 @@ window.preload = function () {
 	var fastMenu = false; //Menu navigation transitions speed
 	var speedBarShow = false; //show the speed bar
 	var showDirections = true; //show direction arrow guides in the main playing mode (points to boxes off screen)
+	var speedMode = false; //speed mode
 
 	//set up tiles sprites
 	var solid = createGroup();
@@ -375,6 +376,9 @@ window.preload = function () {
 
 function cubePhysics() {
 	var kin = ((buff == "superKinetic") ? 1.5 : 1); //movement multiplier
+	if (speedMode) {
+		kin = ((buff == "superKinetic") ? 2.25 : 1.5)
+	}
 	//thrust dash
 	if ((kdown) && (vspd == 0) && (hspd != 0)) {
 		acc = 0.8 * kin;
@@ -404,7 +408,7 @@ function cubePhysics() {
 		}
 		cube.x += tspd * kin; //apply thrust
 	}
-	if (buff == "superKinetic" && lwjump > 0) {
+	if ((buff == "superKinetic" || speedMode) && lwjump > 0) {
     hspd = -5;
   }
 	if (tspd < 0) tspd = 0; //because we don't want thrust to become negative during a wall jump
@@ -520,6 +524,9 @@ function cubePhysics() {
 	//vertical movement
 	if (kdown) { //when holding down key
 		var downBoost = (buff != "superKinetic" ? 1 : 3);
+		if (speedMode) {
+			downBoost = (buff != "superKinetic" ? 3 : 9)
+		}
 		downthrust = downthrustmax * downBoost; //apply downthrust
 		if (once1) {
 			if (!sMute) playSound("sounds/category_swish/deep_swish_2.mp3", false);
@@ -581,7 +588,7 @@ function cubePhysics() {
 		else djump = 0;
 	}
 	if (justJumped == 2 && vspd < 0 && !kjumphold) { //if you're moving up in a jump and you're not still holding on (this will only have a effect a frame after you pressed up)
-		if (buff != "superKinetic") vspd = max(vspd, -jppwr / 2);
+		if (buff != "superKinetic" || speedMode) vspd = max(vspd, -jppwr / 2);
 		else vspd = min(max(vspd, -jppwr / 1.5), -5);
 		justJumped = 0;
 	}
@@ -627,6 +634,9 @@ function cubePhysics() {
 function playingStages() {
 	if (animate) dot.play();
 	else dot.pause();
+	if (speedMode) {
+		score = max(0, score - 5);
+	}
 	if (cube.isTouching(dot)) { //check if touched dot
 		if (!justReset) {
 			if (stage != 0) score += 10 + 1.25 * stage;
@@ -796,6 +806,9 @@ function boxSetUp(x, flux, bonusy, boomy, buffy, spicy, badsy) {
 
 function boxPhysics() {
   var kin = ((buff == "superKinetic") ? 1.5 : 1); //movement multiplier
+	if (speedMode) {
+		kin = ((buff == "superKinetic") ? 2.25 : 1.5);
+	}
 	boxs.setDepthEach(0.02);
 	//hitbox following underneath and ahead. 
 	//This is essential for collisions: a "future" hitbox ahead of the player (basically where the player will be next frame)
@@ -804,7 +817,7 @@ function boxPhysics() {
 	smashbox.x = cube.x + hspd;
 	smashbox.y = cube.y + vspd;
 	if (kdown && !grounded) {
-		if (buff == "superKinetic" || vspd > 55) {
+		if (buff == "superKinetic" || speedMode || vspd > 55) {
 		  smashbox.height += vspd * 2;
 		  if (hspd != 0) {
 		    smashbox.width = 65;
@@ -865,7 +878,7 @@ function boxPhysics() {
 			}
 			//box smashing
 			if (cbox.x > cube.x - 100 - hspd && cbox.x < cube.x + 100 + hspd) {
-				if (((kdown) && (vspd > 0) && (smashbox.isTouching(cbox) || cube.isTouching(cbox)) && ((cube.y < cbox.y - cbox.height / 2) || buff == "superKinetic")) || (cube.isTouching(cbox) && buff == "gigaCube")) {
+				if (((kdown) && (vspd > 0) && (smashbox.isTouching(cbox) || cube.isTouching(cbox)) && ((cube.y < cbox.y - cbox.height / 2) || buff == "superKinetic" || speedMode)) || (cube.isTouching(cbox) && buff == "gigaCube")) {
 					//if it's a mystery box, do these lines of code also: (must be done before box is destroyed)
 					if (cbox.type == "bonus") {
 						var luck = 25 * randomNumber(1, 4);
@@ -958,7 +971,7 @@ function boxPhysics() {
 				}
 				//jumping off the top of a box
 				if ((kjump) && (!teeth)) {
-					if (buff == "superKinetic") vspd += -jppwr * 1.5;
+					if (buff == "superKinetic" || speedMode) vspd += -jppwr * 1.5;
 					else vspd += -jppwr;
 					if (!sMute) playSound("sounds/category_swish/fast_swish.mp3", false);
 					cube.y += vspd;
@@ -1104,7 +1117,9 @@ function baddiesPhysics() {
 			//but if they touch you...
 		} else if (baddy.isTouching(cube)) {
 			if (buff == "thornArmor" || buff == "gigaCube") {
-				if (buff == "thornArmor") {
+				if (buff == "thornArmor" && speedMode) {
+					hurt(10, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
+				} else if (buff == "thornArmor" || speedMode) {
 					hurt(25, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
 				} else {
 					hurt(100, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
@@ -1123,7 +1138,11 @@ function baddiesPhysics() {
 					deady.lifetime = 5;
 				}
 				if (!sMute) playSound("sounds/category_puzzle/puzzle_game_collapse_chatter_02.mp3", false);
-			} else hurt(100, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
+			} else if (!speedMode) {
+				hurt(100, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
+			} else {
+				hurt(25, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
+			}
 		}
 		//if they go under ground (happens when they spawn inside a box). This will also be the lucky chance when one less baddy appears!
 		if (baddy.y > 272) {//reposition if went underground
@@ -1244,8 +1263,9 @@ function thornMechanics() {
 			if (!sMute) playSound("sounds/category_puzzle/puzzle_game_collapse_chatter_02.mp3", false);
 		} else if (cube.isTouching(ithorn)) { //powers allow instant destroy
 			if (buff == "thornArmor" || buff == "gigaCube") {
-				if (buff == "thornArmor" && ithorn.y != 272) hurt(25, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
-				else if (ithorn != 272) hurt(100, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
+				if ((buff == "thornArmor" || speedMode) && ithorn.y != 272) hurt(25, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
+				else if (buff == "thornArmor" && speedMode && ithorn != 272) hurt(10, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
+				else hurt(100, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
 				if (!ithorn.isTouching(explos)) {
 					score += 10;
 					squash++;
@@ -1365,7 +1385,8 @@ function shootersPhysics() {
 		if ((fir.isTouching(solid) || fir.isTouching(cube) || fir.isTouching(explos) || fir.isTouching(boxs) || fir.isTouching(bads) || fir.isTouching(thorns) || (fir.isTouching(boxs)) || (stun > 0))) {
 			//first before any destruction animations or destroy(), we deduct if hit player
 			if (fir.isTouching(cube)) {
-				if (buff == "thornArmor") hurt(25, 60, 0);
+				if (buff == "thornArmor" && speedMode) hurt(10, 60, 0);
+				else if (buff == "thornArmor" || speedMode) hurt(25, 60, 0);
 				else hurt(100, 60, 0);
 			}
 			if (!sMute) playSound("sounds/category_hits/vibrant_game_hit_poof_dissolve_2_up.mp3", false);
@@ -1542,7 +1563,7 @@ function cameraMovement() {
 	if (statChecking == 0 && !transing) {
 		if ((cube.x > 237.4) && (cube.x < 1580)) { //so camera only follows vertical once a certain height above the floor is reached
 			var xDest = cube.x;
-			if (buff != "superKinetic") camera.x += (xDest - camera.x) / 4; //camera follows horizontal movement
+			if (buff != "superKinetic" && !speedMode) camera.x += (xDest - camera.x) / 4; //camera follows horizontal movement
 			else camera.x = xDest;
 		}
 		if (camera.x > 237.4 && cube.x < 237.4) {//when camera didn't catch up enough to the left
@@ -1554,7 +1575,7 @@ function cameraMovement() {
 		if (cube.y <= 110) { //so camera only follows vertical once a certain height above the floor is reached
 			if (quake > 0) { //only start following player's y once it hits the ground for the first time, how special!
 				var yDest = cube.y;
-				if (buff != "superKinetic") camera.y += (yDest - camera.y) / 2; //camera follows vertical movement
+				if (buff != "superKinetic" && !speedMode) camera.y += (yDest - camera.y) / 2; //camera follows vertical movement
 				else camera.y = yDest;
 			}
 		} else if (camera.y < 100 && shake == 0 && teeth) camera.y = 100; //if cube is on ground but the shaking caused displacement
@@ -2003,6 +2024,9 @@ function restartGame() { //However, the main data is saved in local Storage
 	}
 	if (!sMute && !transing) playSound("sounds/category_transition/transition_page_1.mp3");
 	score = 0; //actual score
+	if (speedMode) {
+		score = 5000;
+	}
 	boxes = 0; //box count (number remaining)
 	stage = 0; //the larger this number, the more difficult it gets: e.g. higher spawn rates, more boxes
 	broke = 0; //number of boxes broke
@@ -2098,12 +2122,15 @@ function scored(points, hps, pumphp, x, y) {
 	if (hps) {
 		hp += hps;
 	}
+	if (speedMode) {
+		score = max(0, score - 5);
+	}
 	write();
 }
 
 function death() {
 	//death sequence (placeholder for now) - soon to be put in function
-	if (hp == 0) {
+	if (hp == 0 || (speedMode && score <= 0)) {
 		if (once5) {
 			once5 = false;
 			willpause = true;
@@ -2378,6 +2405,7 @@ function draw() {
 		fill("black");
 		textFont(myFontNormal);
 		text(frameRater, camera.x - 300 - hspd, camera.y + 300);
+		text('SpeedMode? ' + speedMode, camera.x - 300 - hspd, camera.y + 270);
 		if (sinCounter % 3 == 0) frameRater = round(World.frameRate);
 	}
 	if (sinCounter < 360) {
@@ -3322,6 +3350,12 @@ function settingsPlace() {
 			if ((kwdown || kwup) && (!sMute)) {
 				playSound("sounds/Equip-scroll-click.mp3", false);
 			}
+			
+			//secret 'speedy' setting
+			if (keyWentDown("S")) {
+				speedMode = !speedMode;
+			}
+			
 			//select choice
 			if (ksel) {
 				arrow.x += 10;
@@ -3388,6 +3422,7 @@ function settingsPlace() {
 				movingBack = true;
 			}
 		}
+		
 }
 
 function vault() {
@@ -4117,7 +4152,7 @@ function wjt(x) {
 }
 
 function goto(s) {
-	hp = 1000;
+	hp = 1000; 
 	savedBoxes = [];
 	savedBads = [];
 	savedThorns = [];

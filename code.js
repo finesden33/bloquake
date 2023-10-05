@@ -634,25 +634,24 @@ function cubePhysics() {
 function playingStages() {
 	if (animate) dot.play();
 	else dot.pause();
-	if (speedMode) {
-		score = max(0, score - 5);
-	}
 	if (cube.isTouching(dot)) { //check if touched dot
 		if (!justReset) {
 			if (stage != 0) score += 10 + 1.25 * stage;
 			//gain hp at start of stage
-			if (hp >= 800) {
-				hp = min(hp + 25, 1000);
-			} else if (hp >= 600) {
-				hp = min(hp + 50, 825);
-			} else if (hp >= 400) {
-				hp = min(hp + 100, 650);
-			} else if (hp >= 300) {
-				hp += 100;
-			} else {
-				hp = 400;
+			if (!speedMode) {
+				if (hp >= 800) {
+					hp = min(hp + 25, 1000);
+				} else if (hp >= 600) {
+					hp = min(hp + 50, 825);
+				} else if (hp >= 400) {
+					hp = min(hp + 100, 650);
+				} else if (hp >= 300) {
+					hp += 100;
+				} else {
+					hp = 400;
+				}
+				ghp = 2.5;
 			}
-			ghp = 2.5;
 			stageRecover = 40;
 			flashRecov = false;
 			rustickCount = 0;
@@ -707,6 +706,12 @@ function playingStages() {
 	if (boxes == 0) {
 		//if (dot.y > 200 && !sMute) playSound("sounds/Subtle-pop.mp3",false);
 		dot.y = 100 + 3 * sin(5 * sinCounter); //hovering;
+	}
+	if (speedMode) {
+		score = min(1000, max(0, score - 2 * min(1000 / (hp * 2), 2)));  // gradually decrease score
+		if (recover <= 0) {
+			hp = min(1000, hp + 1) // gradually increase hp
+		}
 	}
 }
 
@@ -882,7 +887,9 @@ function boxPhysics() {
 					//if it's a mystery box, do these lines of code also: (must be done before box is destroyed)
 					if (cbox.type == "bonus") {
 						var luck = 25 * randomNumber(1, 4);
-						hp += luck;
+						if (!speedMode) {
+							hp += luck;
+						}
 						score += luck;
 						bonuses++;
 						ghp = 2;
@@ -1117,9 +1124,7 @@ function baddiesPhysics() {
 			//but if they touch you...
 		} else if (baddy.isTouching(cube)) {
 			if (buff == "thornArmor" || buff == "gigaCube") {
-				if (buff == "thornArmor" && speedMode) {
-					hurt(10, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
-				} else if (buff == "thornArmor" || speedMode) {
+				if (buff == "thornArmor") {
 					hurt(25, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
 				} else {
 					hurt(100, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
@@ -1138,8 +1143,6 @@ function baddiesPhysics() {
 					deady.lifetime = 5;
 				}
 				if (!sMute) playSound("sounds/category_puzzle/puzzle_game_collapse_chatter_02.mp3", false);
-			} else if (!speedMode) {
-				hurt(100, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
 			} else {
 				hurt(25, 60, "sounds/category_explosion/vibrant_game_ball_touch_1.mp3");
 			}
@@ -1263,8 +1266,7 @@ function thornMechanics() {
 			if (!sMute) playSound("sounds/category_puzzle/puzzle_game_collapse_chatter_02.mp3", false);
 		} else if (cube.isTouching(ithorn)) { //powers allow instant destroy
 			if (buff == "thornArmor" || buff == "gigaCube") {
-				if ((buff == "thornArmor" || speedMode) && ithorn.y != 272) hurt(25, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
-				else if (buff == "thornArmor" && speedMode && ithorn != 272) hurt(10, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
+				if ((buff == "thornArmor") && ithorn.y != 272) hurt(25, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
 				else hurt(100, 60, "sounds/category_accent/puzzle_game_accent_bubble_05.mp3");
 				if (!ithorn.isTouching(explos)) {
 					score += 10;
@@ -1385,8 +1387,7 @@ function shootersPhysics() {
 		if ((fir.isTouching(solid) || fir.isTouching(cube) || fir.isTouching(explos) || fir.isTouching(boxs) || fir.isTouching(bads) || fir.isTouching(thorns) || (fir.isTouching(boxs)) || (stun > 0))) {
 			//first before any destruction animations or destroy(), we deduct if hit player
 			if (fir.isTouching(cube)) {
-				if (buff == "thornArmor" && speedMode) hurt(10, 60, 0);
-				else if (buff == "thornArmor" || speedMode) hurt(25, 60, 0);
+				if (buff == "thornArmor") hurt(25, 60, 0);
 				else hurt(100, 60, 0);
 			}
 			if (!sMute) playSound("sounds/category_hits/vibrant_game_hit_poof_dissolve_2_up.mp3", false);
@@ -2025,7 +2026,7 @@ function restartGame() { //However, the main data is saved in local Storage
 	if (!sMute && !transing) playSound("sounds/category_transition/transition_page_1.mp3");
 	score = 0; //actual score
 	if (speedMode) {
-		score = 5000;
+		score = 500;
 	}
 	boxes = 0; //box count (number remaining)
 	stage = 0; //the larger this number, the more difficult it gets: e.g. higher spawn rates, more boxes
@@ -2121,9 +2122,6 @@ function scored(points, hps, pumphp, x, y) {
 	}
 	if (hps) {
 		hp += hps;
-	}
-	if (speedMode) {
-		score = max(0, score - 5);
 	}
 	write();
 }
@@ -2398,7 +2396,7 @@ function draw() {
 	transition();
 	soundManagement();
 	if (!transing) screenText();
-	if (!inTutorial) achievementWatchers();
+	if (!inTutorial && !speedMode) achievementWatchers();
 
 	if (debugging) { //for debugging
 		textSize(textScale * 20);
@@ -3352,7 +3350,7 @@ function settingsPlace() {
 			}
 			
 			//secret 'speedy' setting
-			if (keyWentDown("S")) {
+			if (keyWentDown("K")) {
 				speedMode = !speedMode;
 			}
 			

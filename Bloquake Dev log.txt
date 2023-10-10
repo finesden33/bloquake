@@ -330,6 +330,9 @@
 -added special Night theme Music for when you play in Night theme.
 -fixed some sound issues
 
+>1.4 - "Speed Mode"
+-added speedmode game Mode
+-added speedmode music (it's just the original theme x1.36 speed)
 
 
 

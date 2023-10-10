@@ -272,6 +272,9 @@ window.preload = function () {
 	var magn = 0; //magnitude
 	var recover = 0; //recover time - when and how much
 	var hp = 1000; //health pointes
+	var combo = 0; //combo counter (for speedmode)
+	var comboTop = 50;
+	var comboTimer = comboTop; //combo timer (for speedmode) when it reaches zero, combo resets to zero, then it goes back to 120
 
 	//box variables
 	var boxs = createGroup(); //normal box
@@ -651,6 +654,8 @@ function playingStages() {
 					hp = 400;
 				}
 				ghp = 2.5;
+			} else {
+				comboMng(10)
 			}
 			stageRecover = 40;
 			flashRecov = false;
@@ -708,9 +713,16 @@ function playingStages() {
 		dot.y = 100 + 3 * sin(5 * sinCounter); //hovering;
 	}
 	if (speedMode) {
-		score = min(1000, max(0, score - 2 * min(1000 / (hp * 2), 2)));  // gradually decrease score
+		score = min(1000, min(score, 
+			max(0, score - 3 * min(1000 / (hp * 2), 3)) + combo / 100));  // gradually decrease score
 		if (recover <= 0) {
 			hp = min(1000, hp + 1) // gradually increase hp
+		}
+		if (comboTimer > 0 && combo > 0) {
+			comboTimer--;
+		} else {
+			combo = 0;
+			comboTimer = comboTop;
 		}
 	}
 }
@@ -919,6 +931,10 @@ function boxPhysics() {
 						bonuses++;
 						ghp = 2;
 						powerups++;
+						comboMng(100)
+						if (speedMode) {
+							score = 1000;
+						}
 						if (!sMute) playSound("sounds/category_puzzle/puzzle_game_powerup_light_04.mp3", false);
 						if (!sMute) playSound("sounds/category_pop/puzzle_game_ui_bubble_04.mp3", false);
 						//choose power randomly
@@ -951,6 +967,7 @@ function boxPhysics() {
 					boxes--;
 					score += 5;
 					broke++;
+					comboMng(1);
 					if (thornsTotal != 0) rustickCount = 0;
 				}
 				//vertical interaction
@@ -1109,6 +1126,7 @@ function baddiesPhysics() {
 					score += 5;
 					squash++;
 					badsTotal++;
+					comboMng(1);
 				}
 				//create death animation
 				baddy.destroy();
@@ -1133,6 +1151,7 @@ function baddiesPhysics() {
 					score += 5;
 					squash++;
 					badsTotal++;
+					comboMng(1);
 				}
 				baddy.destroy();
 				if (animate) {
@@ -1255,6 +1274,7 @@ function thornMechanics() {
 				score += 10;
 				squash++;
 				thornsTotal++;
+				comboMng(3);
 			}
 			if (animate) {
 				var tdead = createSprite(ithorn.x, ithorn.y); //destoring animation sprite
@@ -1272,6 +1292,7 @@ function thornMechanics() {
 					score += 10;
 					squash++;
 					thornsTotal++;
+					comboMng(3);
 				}
 				ithorn.destroy();
 				if (animate) {
@@ -1338,6 +1359,7 @@ function shootersPhysics() {
 		ball.scale = max(2 - (1.5 / hpe), 1); //get smaller each hit
 		if (ball.isTouching(cube) && (ball.rotationSpeed == 0)) { //deduct life when not spinning and on contact and cause spinning
 			hpe--;
+			comboMng(1);
 			if (hpe > 0) score += 15; //on a hit which didn't kill it
 			if (!sMute) playSound("sounds/category_pop/puzzle_game_ui_bubble_01.mp3");
 			if (hspd != 0) ball.rotationSpeed = hspd * 20;
@@ -1358,6 +1380,7 @@ function shootersPhysics() {
 				squash++;
 				score += 50 + stage;
 				eyesTotal++;
+				comboMng(5);
 			}
 			ball.destroy();
 			if (stage >= 30) achUnlock(39); //Destroy an Evil Eye past stage 29 (achievement)
@@ -1454,7 +1477,16 @@ function hurt(dmg, rec, sound) {
 			hp = 25;
 		}
 		hits++;
+		if (speedMode && dmg > 0) {
+			comboTimer = floor(comboTimer / 2);
+			score = max(0, score - dmg / 10)
+		}
 	}
+}
+
+function comboMng(comboAmount = 1) {
+	combo += comboAmount
+	comboTimer = comboTop
 }
 
 function powerUps() {
@@ -2024,9 +2056,11 @@ function restartGame() { //However, the main data is saved in local Storage
 		saveGame();
 	}
 	if (!sMute && !transing) playSound("sounds/category_transition/transition_page_1.mp3");
-	score = 0; //actual score
+	
 	if (speedMode) {
 		score = 500;
+	} else {
+		score = 0;
 	}
 	boxes = 0; //box count (number remaining)
 	stage = 0; //the larger this number, the more difficult it gets: e.g. higher spawn rates, more boxes
@@ -2089,7 +2123,8 @@ function controls() {
 		kjump = keyWentDown("up") || keyWentDown("W");
 		kjumphold = keyDown("up") || keyDown("W");
 		kdown = keyDown("down") || keyDown("S");
-		if (playing && !transing && hp > 0 && (keyWentDown("p") - mouseWentDown("leftButton"))) {
+		let pause_key = keyWentDown("p") || keyWentDown("ESCAPE")
+		if (playing && !transing && hp > 0 && (pause_key - mouseWentDown("leftButton"))) {
 			if (!(!willpause && pause)) willpause = !willpause;
 		}
 	}
@@ -2156,6 +2191,7 @@ function death() {
 
 function soundManagement() {
 	if (mMute) {
+		stopSound("sounds/nature-cube-speedmode.mp3");
 		stopSound("sounds/Nature-Cube-Bloquake-OST.mp3");
 		stopSound("sounds/bloquake-menu-soundtrack.mp3");
 		stopSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3");
@@ -2165,7 +2201,9 @@ function soundManagement() {
 		hasMuted = true;
 	} else if (once7 == 1) {
 		if (playing) {
-			if (themeNum == 0 || themeNum == 3) {
+			if (speedMode) {
+				playSound("sounds/nature-cube-speedmode.mp3", true);
+			} else if (themeNum == 0 || themeNum == 3) {
 				playSound("sounds/Nature-Cube-Bloquake-OST.mp3", true); //music thanks to of BC mix music and Me, Finesden
 			} else if (themeNum == 1) {
 				playSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3", true); //music thanks to of BC mix music
@@ -2388,6 +2426,7 @@ function draw() {
 		settingsPlace();
 		vault();
 		otherMenuStuff();
+		stopSound("sounds/nature-cube-speedmode.mp3");
 		stopSound("sounds/Nature-Cube-Bloquake-OST.mp3");
 		stopSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3");
 		stopSound("sounds/Nature-Cube-Vintage.mp3");
@@ -2404,6 +2443,8 @@ function draw() {
 		textFont(myFontNormal);
 		text(frameRater, camera.x - 300 - hspd, camera.y + 300);
 		text('SpeedMode? ' + speedMode, camera.x - 300 - hspd, camera.y + 270);
+		text('combo: ' + combo, camera.x - 300 - hspd, camera.y + 240);
+		text(comboTimer, camera.x - 300 - hspd, camera.y + 210);
 		if (sinCounter % 3 == 0) frameRater = round(World.frameRate);
 	}
 	if (sinCounter < 360) {
@@ -3352,6 +3393,11 @@ function settingsPlace() {
 			//secret 'speedy' setting
 			if (keyWentDown("K")) {
 				speedMode = !speedMode;
+				if (speedMode) {
+					score = 500;
+				} else {
+					score = 0;
+				}
 			}
 			
 			//select choice
@@ -3732,6 +3778,7 @@ function transition() {
 				title.visible = true;
 			}
 			stopSound("sounds/bloquake-menu-soundtrack.mp3");
+			stopSound("sounds/nature-cube-speedmode.mp3");
 			stopSound("sounds/Nature-Cube-Bloquake-OST.mp3");
 			stopSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3");
 			stopSound("sounds/Nature-Cube-Vintage.mp3");
@@ -3779,7 +3826,9 @@ function onSwitch(mode) { //when switching from ingame to menu do this once
 		delay = 1;
 		camera.x = 600;
 		camera.y = 106.5;
-		if (themeNum == 0 || themeNum == 3) {
+		if (speedMode) {
+			playSound("sounds/nature-cube-speedmode.mp3", true);
+		} else if (themeNum == 0 || themeNum == 3) {
 			playSound("sounds/Nature-Cube-Bloquake-OST.mp3", true); //music thanks to of BC mix music and Me, Finesden
 		} else if (themeNum == 1) {
 			playSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3", true); //music thanks to of BC mix music
@@ -4208,6 +4257,7 @@ function saveGame() {
 		localStorage.setItem("directorShowOn", showDirections);
 		localStorage.setItem("costume", skin);
 		localStorage.setItem("theme", themeNum);
+		localStorage.setItem("speedMode", speedMode);
 		
 		//submit stats to kongregate
 		submitStats();
@@ -4285,6 +4335,12 @@ function loadGame() {
 				cube.setAnimation(ima + "cube");
 				selector.setAnimation(ima + "cube");
 			}
+			speedMode = JSON.parse(localStorage.getItem("speedmode"));
+			if (speedMode) {
+				score = 500;
+			} else {
+				score = 0;
+			}
 			cube.pause();
 			selector.pause();
 			
@@ -4308,7 +4364,9 @@ function submitStats() {
 	}
 }
 
-loadGame(); //redefine variables that were saved in localstorage
+if (localStorage.length > 1) {
+	loadGame(); //redefine variables that were saved in localstorage
+}
 //Code and Images created by Ethan S. Fine (Finesden Studios)
 //All Rights Reserved © 2019-2020 Ethan S. Fine
 //----

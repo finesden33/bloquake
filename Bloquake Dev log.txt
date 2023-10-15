@@ -333,13 +333,13 @@
 >1.4 - "Speed Mode"
 -added speedmode game Mode
 -added speedmode music (it's just the original theme x1.36 speed)
--removed speedBar
+-removed speedBar (it now functions as the combo bar during speed mode)
 -added speedmode stats (e.g. best combo and top speed mode stage)
 -added gamemode option in settings
--added 14 new achievements and costumes
+-added 21 new achievements and costumes
 -changed some old achievements
--TODO: add special speedmode relevant greeting/farewell texts
--TODO: add 7 more achievements and costumes
+-added special speedmode relevant greeting/farewell texts
+-added special tutorial guide text for playing tutorial in speed mode
 
 
 

@@ -834,7 +834,7 @@ function playingStages() {
 	if (speedMode) {
 		if (buff != "superKinetic" && score > 0) {
 			score = min(1000, min(score, 
-				max(0, score - 3 * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3)) + combo / 100));  // gradually decrease score
+				max(0, score - max(0, min(1, floor((stage - 70) / 10) / 20)) - 3 * max(1, min(2, stage / 70)) * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3)) + combo / 100));  // gradually decrease score
 		} else {
 			score = min(score, 1000);
 		}
@@ -1612,6 +1612,7 @@ function hurt(dmg, rec, sound) {
 			comboTimer = floor(comboTimer / 2);
 			if (buff != "thornArmor") {
 				score = max(0, score - dmg / 10);
+				if (score == 0) comboTimer = 0;
 			}
 		}
 	}
@@ -2159,6 +2160,7 @@ function displayStats() {
 			  if ((lessonSelect <= lessonsDone || beatTutorial) && inTutorial && lessonSelect != lesson) {
   			  stage = lessonSelect;
   			  lesson = stage;
+			  resets++; // don't be sneaky
   			  if (!sMute) playSound("sounds/category_puzzle/puzzle_game_magic_bubble_01.mp3", false);
   				savedBoxes = [];
 				curPowers = [];
@@ -2167,6 +2169,7 @@ function displayStats() {
   				dotHeight = -2000;
   				Tstep = 0;
 				Tml = getLines(Twords[lesson]);
+				sTml = getLines(speedTwords[lesson]);
 				makeLines();
 				stepMsg = 0;
   				tutorialStageSetup();
@@ -2286,6 +2289,7 @@ function restartGame() { //However, the main data is saved in local Storage
 		lesson = 0;
 		Tstep = 0;
 		Tml = getLines(Twords[lesson]);
+		sTml = getLines(speedTwords[lesson]);
 		makeLines();
 		stepMsg = 0;
 		lessonDone = false;
@@ -2342,7 +2346,7 @@ function scored(points, hps, pumphp, x, y) {
 
 function death() {
 	//death sequence (placeholder for now) - soon to be put in function
-	if (hp == 0 || (speedMode && score <= 0)) {
+	if (hp == 0 || (speedMode && score <= 0 && combo <= 0)) {
 		if (once5) {
 			once5 = false;
 			willpause = true;
@@ -2528,7 +2532,7 @@ function screenText() {
 	if (statChecking == 0) cammy.y = camera.y;
 	
 	//mini tutorial for basics if you skipped the tutorial
-	if (!beatTutorial && games <= 2 && playing && !inTutorial) {
+	if (!beatTutorial && games < 3 && playing && !inTutorial && !speedMode) {
 	  rustickCount = min(rustickCount+1, 500);
 	  var helperText = "";
 	  if (rustickCount >= 100 && !pause) {
@@ -2631,10 +2635,13 @@ function draw() {
 		textFont(myFontNormal);
 		text(frameRater, camera.x - 300 - hspd, camera.y + 300);
 		if (sinCounter % 3 == 0) frameRater = round(World.frameRate);
+		text(scoreLoss, camera.x - 300 - hspd, camera.y + 270);
+		if (sinCounter % 3 == 0) scoreLoss = buff == "superKinetic" ? 0 : floor(100 * (- max(0, min(1, floor((stage - 70) / 10) / 20)) - 3 * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3) + combo / 100));
 		// hitbox.visible = true;
 		// smashbox.visible = true;
 		// tallbox.visible = true;
-		u()
+		// let targetstage = 80
+		// if (stage < targetstage) goto(targetstage);
 	}
 	if (sinCounter < 360) {
 		sinCounter++;
@@ -2644,6 +2651,7 @@ function draw() {
 } 
 {
 	var frameRater = World.frameRate;
+	var scoreLoss = 0;
 	var debugging = false;
 	var inTutorial = false;
 	var hasFocused = false;
@@ -2678,7 +2686,7 @@ function draw() {
 		"That is a bad-cube. It is bad. These guys spawn at the start of each stage and at other random times. They deal half a heart of damage, so be careful. To kill one, simply land on it while you're in quake form.",
 		"Bad-cubes are quirky and like to climb up one another, and they can also levitate. Sometimes they can even spawn in stacks.",
 		"When you get into situations like these, your best bet is to wall-jump or jump off a box then enter quake form when they are directly beneath you. Repeat this process until this annoying predicament is over.",
-		"And you thought there was only one enemy? Behold the thorn-head! To kill one of these stationery fiends, wait until it's fully exposed, then quickly slide into it when in quake form. Don't try to stomp on them - it will hurt.",
+		"And you thought there was only one enemy? Behold the thorn-head! To kill one of these stationary fiends, wait until it's fully exposed, then quickly slide into it when in quake form. Don't try to stomp on them - it will hurt.",
 		"If you thought that wasn't enough, let me introduce you to the evil-eye. After stage 10, you'll get to know this guy really well. To destroy it, simply touch it. But watch out when it reddens, it's about to shoot a batch of fireballs at you!",
 		"Guess what? Evil-eyes can spawn with up to 3 lives, like this one! Remember that a new evil-eye will not spawn at the start of a stage if there is already an existing one. And once it exists, it can't gain any lives. ",
 		"Here's a simple practice stage. Again, with box spawning, but this time with enemies too. Never forget that all you must do is break boxes to proceed. Although, you might want to kill enemies to make the job easier.",
@@ -2693,11 +2701,37 @@ function draw() {
 		"It all comes down to this. This stage is a simulation of what it's like at around stage 30. Always remember that Bloquake is about skill, strategy, and luck! Break all the boxes and then you're done! Good luck, and have fun playing Bloquake!",
 		"This text will not appear. If this text does appear, then something went wrong. Please further investigate this issue. Thank you. -A message from Blocky. Blocky now has nothing more to say."
 	];
+	var speedTwords = [
+		"SPEED MODE!!!",
+		"That's right. It's the same tutorial, but blocky aint here to help you no more.",
+		"Notice how your speed is crazy fast? Yep, that's speed mode alright.",
+		"Normally, you'd have a score timer racing to 0 instead of the ???",
+		"And what happens when the score timer hits zero? Well, that's game over for you.",
+		"Notice how you don't need to climb this stack anymore?",
+		"Also, notice how your combo is going up? There's also a combo meter, but that won't go down unless you're playing the main game.",
+		"Well, unless you get hit by an enemy. That's another way to lose your combo.",
+		"I hope you didn't use reset back there. You can reach those boxes!",
+		"Have fun not having regen. health in the tutorial!",
+		"Well, in the main game, you'll constantly regenerate health.",
+		"But not here. If you lose your health in the speed mode tutorial, just reset.                                                                                       (but then you might not get the secret)",
+		"Ugh these little you-know-whats.....",
+		"The evil eye will be your go-to source of score. Just don't let him kill you.",
+		"Higher combo = slower score timer, lower health = faster score timer.",
+		"This is the part in the speed mode tutorial I usually die.",
+		"Well, actually, here's some health, just because you made it this far. But notice how it wasn't those buff boxes that gave you it.",
+		"This here is also a nasty trap to make you reset the stage... which sucks if you're trying to get the you-know-what. (wink wink, nudge nudge, sayNoMore sayNoMore)",
+		"Triple-Jump is meh in speed mode tbh.",
+		"'If blocks can neither be created nor      destroyed then that means the blocks are part of the ground that we keep pushing down' - Groovy",
+		"Thorn-Armour will also prevent enemies from deducting score.",
+		"Super-Kinetic is OP in speed mode: your speed is uncontrollably fast, you can stop on a dime, break anything by touching it, and your score timer doesn't go down!",
+		"Quake-stun, a fan favourite, now stuns the timer by 90% during speed mode.",
+		"Kudos to you if you haven't reset yet.",
+		"Good luck and enjoy playing Bloquake's TRUE form."
+	]
 } 
 {
 	var parags = 0;
 	var Tmcpl = 40; //max characters per line
-	var Tml = 0; //max number of lines
 	var TwordCnt = 0; //word count
 	var Tstep = 0;
 	var lesson = 0;
@@ -2706,7 +2740,8 @@ function draw() {
 	var linecount = 0;
 	var lessonDone = false;
 	dotHeight = -2000;
-	Tml = getLines(Twords[lesson]);
+	var Tml = getLines(Twords[lesson]);
+	var sTml = getLines(speedTwords[lesson])
 	var actWords = ["", ""];
 	makeLines();
 	var lessonName = [
@@ -2749,8 +2784,8 @@ function wordBoxText(x, y) {
 
 function makeLines() {
 	TwordCnt = 0;
-	for (var j = 0; j < Tml; j++) {
-		var Tline = strPart(Twords[lesson]);
+	for (var j = 0; j < (Tml * !speedMode + sTml * speedMode); j++) {
+		var Tline = speedMode ? strPart(speedTwords[lesson]) : strPart(Twords[lesson]);
 		if (j == Tstep) actWords[0] = Tline;
 		if (j == Tstep + 1) actWords[1] = Tline;
 	}
@@ -2774,12 +2809,13 @@ function strPart(string) {
 }
 
 function guideControl() {
+	let lcount = (Tml * !speedMode + sTml * speedMode)
 	if (keyWentDown("space")) {
 		Tstep += 2;
 		makeLines();
-		if (!sMute && Tstep < Tml) playSound("sounds/category_objects/click.mp3", false);
+		if (!sMute && Tstep < lcount) playSound("sounds/category_objects/click.mp3", false);
 	}
-	if (Tstep >= Tml && Tml != 0) {
+	if (Tstep >= lcount && lcount != 0) {
 		Tstep = 0;
 		makeLines();
 		if (!sMute) playSound("sounds/Button-Menu-Hard-Click.mp3", false);
@@ -2810,6 +2846,7 @@ function tutorialStages() {
 		if (lesson < Twords.length - 1) lesson++;
 		else lesson = 0;
 		Tml = getLines(Twords[lesson]);
+		sTml = getLines(speedTwords[lesson]);
 		makeLines();
 		stepMsg = 0;
 		if (!sMute) playSound("sounds/category_notifications/vibrant_game_modern_retro_touch_item_1.mp3", false);
@@ -2831,7 +2868,7 @@ function tutorialStages() {
 		//Complete the tutorial achievement
 		achUnlock(3);
 	}
-	if (lesson == 24 && speedMode && combo >= 200 && resets == 0) {
+	if (lesson == 24 && speedMode && resets == 0) {
 		achUnlock(62); // the true tutorial
 	}
 
@@ -3674,6 +3711,7 @@ function vault() {
 	if (place == 6) {
 		// page selector
 		if (keyWentDown("space")) {
+			playSound("sounds/Button-Menu-Hard-Click.mp3", false);
 			if (vaultpage == 1) {
 				vaultpage = 2;
 			} else if (vaultpage == 2) {
@@ -3777,7 +3815,7 @@ function vault() {
 			}
 		}
 		iSelected.x = xrel + xOffset + skin * spacing - (floor(skin / maxItemsPerRow)) * spacing * maxItemsPerRow;
-		if ((vaultpage == 1 && skin > 42) || (vaultpage == 2 && skin <= 42)) {
+		if ((vaultpage == 1 && skin >= 42) || (vaultpage == 2 && skin < 42)) {
 			iSelected.y = 20000; // put it out of bounds for now
 		} else {
 			iSelected.y = yrel + yOffset + (floor(skin % 42 / maxItemsPerRow)) * spacing;
@@ -3996,6 +4034,7 @@ function transition() {
 				} else {
 					combobar.visible = false;
 				}
+				if (inTutorial) makeLines();
 				
 				slots.setVisibleEach(true);
 				for (var i = 0; i < lives.length; i++) {
@@ -4204,7 +4243,7 @@ function colouring(vintage, night, winter) {
 	var tutorTips = ["Get ready to learn", "Reset is not the same as Restart", "You won't regret coming here", "Did you come here after failing in the game?", "There are 25 lessons in this Tutorial", "Remember, press P to pause.", "The tutorial rewards you with knowledge!", "Who in the world is Blocky?", "Thank you for coming here!", "Try playing the Tutorial in Night theme!", "Use the lessons page to select a lesson"];
 	var tutorBye = ["Returning to the main menu...", "The more you know the less you know.", "Any more questions?", "Say goodbye to Blocky!", "Help! I realized I'm just a bunch of words!", "Was the tutorial fun?", "Did you learn anything?", "Now you can go play the real deal", "Why would I ask you a question?", "Yay! Now you know things!", "The tutorial doesn't make you an expert."];
 	bye.push("There's a 1/" + (bye.length + 1) + " chance in getting this message");
-	var speedmodeTips = ["less hp = faster timer countdown", "higher combo = slower timer countdown", "enemies decrease your timer", "maintain a high combo to stop the timer", "quakeStun slows the timer", "thornArmor prevents enemy timer depletion", "despite 3 hearts, it's still 1000 hp", "your hp will regenerate when not recovering", "combo up by breaking boxes and enemies", "the dot gives you a bonus +10 combo", "keep up your combo before the combobar runs out", "the timer stops for superKinetic", "superKinetic is insanely fast", "your speed is permanently faster", "superKinetic will destroy everything on contact", "A combo might just save your life", "Game over when hp or the timer hits zero", "score points to increase your timer", "the evil eye a good score source", "Keep an eye on your hp", "Always try to maintain your combo", "enemies might ruin your combo", "thorn heads have a +3 combo", "evil eyes have a +5 bonus combo"]
+	var speedmodeTips = ["less hp = faster timer countdown", "higher combo = slower timer countdown", "Enemies will wreck your timer", "maintain a high combo to stop the timer", "quakeStun slows the timer", "ThornArmor prevents enemy timer depletion", "Despite 3 hearts, it's still 1000 hp", "Your hp will regenerate when you're not recovering", "Combo up by breaking boxes and enemies", "The dot gives you a bonus +10 combo", "Keep up your combo before the combobar runs out", "SuperKinetic stops the timer", "superKinetic is insanely fast", "Your speed is permanently faster", "SuperKinetic will destroy everything on contact", "A combo might just save your life", "Game over when hp or the timer hits zero", "Score points to increase your timer", "The evil eye is a good source of score", "Keep an eye on your hp", "Always try to maintain your combo", "Enemies might ruin your combo", "Thorn heads have a +3 combo", "Evil eyes have a +5 bonus combo","Did you try the tutorial in speed mode?"]
 }
 /*
       ----------------
@@ -4313,7 +4352,7 @@ function achievementWatchers() {
 		//Reach stage 60
 		if (stage >= 80) achUnlock(25);
 		//get to stage 100
-		if (stage == 100) achUnlock(42);
+		if (stage >= 100) achUnlock(42);
 		//Reach stage 15 without getting hit
 		if (stage >= 15 && hits == 0) achUnlock(27);
 		//How high can you go?
@@ -4339,7 +4378,7 @@ function achievementWatchers() {
 		//get to stage 80 in speed mode
 		if (stage >= 80 && speedMode) achUnlock(50);
 		//get to stage 100 in speed mode
-		if (stage >= 80) achUnlock(51);
+		if (stage >= 100 && speedMode) achUnlock(51);
 		//get a combo of 100 in speed mode
 		if (topcombo >= 100 && speedMode) achUnlock(52);
 		//get a combo of 200 in speed mode
@@ -4372,12 +4411,12 @@ function achievementWatchers() {
 	if (totalSquash + squash >= 2000) achUnlock(5);
 	//Move 10,000 steps in total
 	if (floor(totalDista / 48) + floor(dista / 48) >= 10000) achUnlock(6);
-	//Break 200 buff boxes
-	if (totalPowerups + powerups >= 200) achUnlock(32);
+	//Break 100 buff boxes
+	if (totalPowerups + powerups >= 100) achUnlock(32);
 	//Break 200 boom boxes
 	if (totalExplosions + explosions >= 200) achUnlock(33);
-	//Break 200 bonus boxes
-	if (totalBonuses + bonuses >= 200) achUnlock(34);
+	//Break 300 bonus boxes
+	if (totalBonuses + bonuses >= 300) achUnlock(34);
 	//Get hit a total of 1000 times
 	if (totalHits + hits >= 1000) achUnlock(28);
 	//Jump 1000 times in total
@@ -4413,8 +4452,8 @@ function achievementWatchers() {
 					"Destroy a total of 2,000 foes", "Move 10,000 steps in total", "Have 10 bad cubes present on stage 10", "Play 1 game", "Play 10 games", "Play 50 games", "Get a score of over 500,000", 
 					"Get a score of over 1,000,000", "Get a score of over 2,500,000", "Break a total of 1,000 boxes", "Break 100 boxes before stage 10", "Have 50 boxes remaining", "Break a total of 10,000 boxes", 
 					"Destroy 100 Thorn-Heads in total", "Destroy 1000 Bad Cubes in total", "Destroy 100 foes before stage 20", "Destroy 50 Evil Eyes in total", "Reach stage 20", "Reach stage 40", "Reach stage 60", "Reach stage 80", 
-					"Reach a total quake rating of 2,500", "Reach stage 15 without getting hit", "Get hit a total of 1,000 times", "Jump 1,000 times in total", "Just sit and wait", "How high can you go?", "Break 200 buff boxes total", 
-					"Break 200 boom boxes total", "Break 200 bonus boxes total", "Reach stage 20 without using a power up", "Reach stage 35 without resetting", "Get game over on stage 1", "Have 20 foes present at once", 
+					"Reach a total quake rating of 2,500", "Reach stage 15 without getting hit", "Get hit a total of 1,000 times", "Jump 1,000 times in total", "Just sit and wait", "How high can you go?", "Break 100 buff boxes total", 
+					"Break 200 boom boxes total", "Break 300 bonus boxes total", "Reach stage 20 without using a power up", "Reach stage 35 without resetting", "Get game over on stage 1", "Have 20 foes present at once", 
 					"Destroy an Evil Eye past stage 29", ":)", "???", "Reach stage 100", "Reach stage 30 without getting hit", "Break a total of 50,000 boxes", "Destroy a total of 10,000 enemies", "Score 3,000,000 before stage 50",
 					"Reach stage 20 in speed mode", "Reach stage 40 in speed mode", "Reach stage 60 in speed mode", "Reach stage 80 in speed mode", "Reach stage 100 in speed mode",
 					"Get a 100 combo in speed mode", "Get a 200 combo in speed mode", "Get a 500 combo in speed mode", "Get a 1000 combo in speed mode", "Achieve ultra speed", "Game over in speed mode with time left",
@@ -4552,6 +4591,9 @@ function loadGame() {
 			ach = JSON.parse(localStorage.getItem("achBeat"));
 			highscores = JSON.parse(localStorage.getItem("highscores"));
 			unlocked = JSON.parse(localStorage.getItem("unlockedAchs"));
+			while (unlocked.length < 63) {
+				unlocked.push(false);
+			}
 			if (localStorage["topspeedstage"] !== undefined && localStorage["bestcombo"] !== undefined) {
 				topSpeedStage = JSON.parse(localStorage.getItem("topspeedstage"));
 				bestcombo = JSON.parse(localStorage.getItem("bestcombo"));

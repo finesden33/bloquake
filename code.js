@@ -389,7 +389,8 @@ window.preload = function () {
 	var hp = 1000; //health pointes
 	var combo = 0; //combo counter (for speedmode)
 	var comboTop = 50;
-	var comboTimer = comboTop; //combo timer (for speedmode) when it reaches zero, combo resets to zero, then it goes back to 120
+	var comboTimer = comboTop; //combo timer (for speedmode) when it reaches zero, combo resets to zero, then it goes back to comboTop
+	var dead = false;
 
 	//box variables
 	var boxs = createGroup(); //normal box
@@ -849,10 +850,18 @@ function playingStages() {
 		topcombo = max(combo, topcombo)
 		if (comboTimer > 0 && combo > 0) {
 			comboTimer--;
-			if (comboTimer <= 0) lostcombo = true;
+			if (comboTimer <= 0) {
+				lostcombo = true;
+				if (!sMute) playSound("sounds/combodie.mp3", false);
+				combobar.scale = 1.15;
+				score = min(1000, score + combo);
+			} else {
+				combobar.scale = 1;
+			}
 		} else {
 			combo = 0;
 			comboTimer = comboTop;
+			combobar.scale = 1;
 		}
 		if (score <= 1) {
 			scrapedBy = true;
@@ -2251,6 +2260,7 @@ function restartGame() { //However, the main data is saved in local Storage
 	bonuses = 0;
 	powerups = 0;
 	hp = 1000;
+	dead = false;
 	topcombo = 0;
 	combo = 0;
 	lostcombo = false;
@@ -2347,6 +2357,9 @@ function scored(points, hps, pumphp, x, y) {
 function death() {
 	//death sequence (placeholder for now) - soon to be put in function
 	if (hp == 0 || (speedMode && score <= 0 && combo <= 0)) {
+		dead = true;
+	}
+	if (dead) {
 		if (once5) {
 			once5 = false;
 			willpause = true;
@@ -2589,16 +2602,18 @@ function draw() {
 	controls();
 	if (playing) { //in game
 		if (!pause) {
-			if (!transing) cubePhysics();
-			boxPhysics();
-			cameraMovement();
-			if (!inTutorial) playingStages();
-			else tutorialStages();
-			baddiesPhysics();
-			thornMechanics();
-			if (!inTutorial) spawnFoes();
-			shootersPhysics();
-			aesthetics();
+			if (!dead) {
+				if (!transing) cubePhysics();
+				boxPhysics();
+				cameraMovement();
+				if (!inTutorial) playingStages();
+				else tutorialStages();
+				baddiesPhysics();
+				thornMechanics();
+				if (!inTutorial) spawnFoes();
+				shootersPhysics();
+				aesthetics();
+			}
 		}
 		
 		if (inTutorial) guideControl();
@@ -4243,7 +4258,7 @@ function colouring(vintage, night, winter) {
 	var tutorTips = ["Get ready to learn", "Reset is not the same as Restart", "You won't regret coming here", "Did you come here after failing in the game?", "There are 25 lessons in this Tutorial", "Remember, press P to pause.", "The tutorial rewards you with knowledge!", "Who in the world is Blocky?", "Thank you for coming here!", "Try playing the Tutorial in Night theme!", "Use the lessons page to select a lesson"];
 	var tutorBye = ["Returning to the main menu...", "The more you know the less you know.", "Any more questions?", "Say goodbye to Blocky!", "Help! I realized I'm just a bunch of words!", "Was the tutorial fun?", "Did you learn anything?", "Now you can go play the real deal", "Why would I ask you a question?", "Yay! Now you know things!", "The tutorial doesn't make you an expert."];
 	bye.push("There's a 1/" + (bye.length + 1) + " chance in getting this message");
-	var speedmodeTips = ["less hp = faster timer countdown", "higher combo = slower timer countdown", "Enemies will wreck your timer", "maintain a high combo to stop the timer", "quakeStun slows the timer", "ThornArmor prevents enemy timer depletion", "Despite 3 hearts, it's still 1000 hp", "Your hp will regenerate when you're not recovering", "Combo up by breaking boxes and enemies", "The dot gives you a bonus +10 combo", "Keep up your combo before the combobar runs out", "SuperKinetic stops the timer", "superKinetic is insanely fast", "Your speed is permanently faster", "SuperKinetic will destroy everything on contact", "A combo might just save your life", "Game over when hp or the timer hits zero", "Score points to increase your timer", "The evil eye is a good source of score", "Keep an eye on your hp", "Always try to maintain your combo", "Enemies might ruin your combo", "Thorn heads have a +3 combo", "Evil eyes have a +5 bonus combo","Did you try the tutorial in speed mode?"]
+	var speedmodeTips = ["less hp = faster timer countdown", "higher combo = slower timer countdown", "Enemies will wreck your timer", "maintain a high combo to stop the timer", "quakeStun slows the timer", "ThornArmor prevents enemy timer depletion", "Despite 3 hearts, it's still 1000 hp", "Your hp will regenerate when you're not recovering", "Combo up by breaking boxes and enemies", "The dot gives you a bonus +10 combo", "Keep up your combo before the combobar runs out", "SuperKinetic stops the timer", "superKinetic is insanely fast", "Your speed is permanently faster", "SuperKinetic will destroy everything on contact", "A combo might just save your life", "Game over when hp or the timer hits zero", "Score points to increase your timer", "The evil eye is a good source of score", "Keep an eye on your hp", "Always try to maintain your combo", "Enemies might ruin your combo", "Thorn heads have a +3 combo", "Evil eyes have a +5 bonus combo","Did you try the tutorial in speed mode?", "The timer gets meaner past stage 70", "Warning: speed mode is for bloquake pros only", "Losing a combo adds the combo to your score timer"]
 }
 /*
       ----------------

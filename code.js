@@ -3711,7 +3711,7 @@ function settingsPlace() {
 					case 8:
 						if (gmode < gmodes.length - 1) {
 							gmode++;
-							if (unlocked[23] && gmode == 2) gmode = 0; //can't use expert mode unless you got over stage 80
+							if (!unlocked[24] && gmode == 2) gmode = 0; //can't use expert mode unless you got over stage 80
 						} else gmode = 0;
 						switch (gmode) {
 							case 0:

@@ -337,9 +337,10 @@
 -added speedmode stats (e.g. best combo and top speed mode stage)
 -added gamemode option in settings
 -added 21 new achievements and costumes
--changed some old achievements
+-changed some old achievement requirements
 -added special speedmode relevant greeting/farewell texts
 -added special tutorial guide text for playing tutorial in speed mode
+-added Expert Mode (unlocked with the expert achievement (reach stage 60))
 
 
 

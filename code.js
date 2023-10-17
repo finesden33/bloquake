@@ -217,6 +217,7 @@ window.preload = function () {
 	var fastMenu = false; //Menu navigation transitions speed
 	var showDirections = true; //show direction arrow guides in the main playing mode (points to boxes off screen)
 	var speedMode = false; //speed mode
+	var expertMode = false; //expert mode
 	var vaultpage = 1; //page in vault
 
 	//set up tiles sprites
@@ -388,7 +389,7 @@ window.preload = function () {
 	var recover = 0; //recover time - when and how much
 	var hp = 1000; //health pointes
 	var combo = 0; //combo counter (for speedmode)
-	var comboTop = 50;
+	var comboTop = 100;
 	var comboTimer = comboTop; //combo timer (for speedmode) when it reaches zero, combo resets to zero, then it goes back to comboTop
 	var dead = false;
 
@@ -498,7 +499,9 @@ window.preload = function () {
 function cubePhysics() {
 	var kin = ((buff == "superKinetic") ? 1.5 : 1); //movement multiplier
 	if (speedMode) {
-		kin = ((buff == "superKinetic") ? 2.25 : 1.5)
+		kin = ((buff == "superKinetic") ? 2.25 : 1.5);
+	} else if (expertMode) {
+		kin = ((buff == "superKinetic") ? 1.9 : 1.25);
 	}
 	//thrust dash
 	if ((kdown) && (vspd == 0) && (hspd != 0)) {
@@ -530,8 +533,8 @@ function cubePhysics() {
 		cube.x += tspd * kin; //apply thrust
 	}
 	if ((buff == "superKinetic" || speedMode) && lwjump > 0) {
-    hspd = -5;
-  }
+		hspd = -5;
+	}
 	if (tspd < 0) tspd = 0; //because we don't want thrust to become negative during a wall jump
 	if (tspd > 0) tspd -= decc * kin; //decrease power of thrust speed
 	if (grounded) lwjump = 0;
@@ -649,7 +652,9 @@ function cubePhysics() {
 	if (kdown) { //when holding down key
 		var downBoost = (buff != "superKinetic" ? 1 : 3);
 		if (speedMode) {
-			downBoost = (buff != "superKinetic" ? 3 : 9)
+			downBoost = (buff != "superKinetic" ? 3 : 9);
+		} else if (expertMode) {
+			downBoost = (buff != "superKinetic" ? 2 : 6);
 		}
 		downthrust = downthrustmax * downBoost; //apply downthrust
 		if (once1) {
@@ -764,15 +769,15 @@ function playingStages() {
 			//gain hp at start of stage
 			if (!speedMode) {
 				if (hp >= 800) {
-					hp = min(hp + 25, 1000);
+					hp = expertMode ? min(hp + 5, 1000) : min(hp + 25, 1000);
 				} else if (hp >= 600) {
-					hp = min(hp + 50, 825);
+					hp = expertMode ? min(hp + 25, 825) : min(hp + 50, 825);
 				} else if (hp >= 400) {
-					hp = min(hp + 100, 650);
+					hp = expertMode ? min(hp + 50, 650) : min(hp + 100, 650);
 				} else if (hp >= 300) {
-					hp += 100;
+					hp += expertMode ? 50 : 100;
 				} else {
-					hp = 400;
+					hp = expertMode ? 300 : 400;
 				}
 				ghp = 2.5;
 			} else {
@@ -817,14 +822,14 @@ function playingStages() {
 		topchance++;
 
 		//shooters set up
-		if (stage >= 10) {
+		if (stage >= max(1, 10 * (!expertMode))) {
 			if (shooters.length < 1) {
 				var eye = createSprite(max(camera.x + randomNumber(-200, min(stage * 20, 1500)), 50), max(-topchance * 30, -130) + randomNumber(15, 40));
 				eye.setAnimation(ima + "eye" + suf);
 				shooters.add(eye);
 				eye.pause();
 				shooters.setDepthEach(11);
-				hpe = min(max((floor(stage / 10)), 1), 3);
+				hpe = expertMode ? 1 + min(max((floor(stage / 10) + 1), 1), 5) : min(max((floor(stage / 10)), 1), 3);
 			}
 		}
 	}
@@ -849,7 +854,7 @@ function playingStages() {
 		}
 		topcombo = max(combo, topcombo)
 		if (comboTimer > 0 && combo > 0) {
-			comboTimer--;
+			comboTimer -= 2 - (buff == "quakeStun");
 			if (comboTimer <= 0) {
 				lostcombo = true;
 				if (!sMute) playSound("sounds/combodie.mp3", false);
@@ -877,8 +882,9 @@ function boxSetUp(x, flux, bonusy, boomy, buffy, spicy, badsy) {
 		if (spacing < 100) {
 			spacing = 100;
 		}
+		
 		var box = createSprite(spacing, 272);
-		var spicyness = randomNumber(1, 1250); //a chance for a spicy suprise...XD
+		var spicyness = randomNumber(1, 1250 + 1250 * expertMode); //a chance for a spicy suprise...XD
 		if (spicyness == 1 && flux > 10 && spicy) {
 			box.setAnimation(ima + "Mr. habanero" + suf);
 			box.type = "pepper";
@@ -890,45 +896,51 @@ function boxSetUp(x, flux, bonusy, boomy, buffy, spicy, badsy) {
 		boxs.add(box);
 		var extras = min(floor(flux / 10) + 3, randomNumber(6, 7)); //number of max extra layers possible - maximum max is 8
 		if (flux <= 5) extras = 2; //before level 6, you can't have more than 3 layers
-		chance = randomNumber(0, extras); //chances of a stacked box tower;
+		chance = randomNumber(0, extras + extras * expertMode); //chances of a stacked box tower;
+		real_chance = chance;
 		if (chance > 0) { //so that the for loop will not run when chance is 0 - when it's a one box stack
 			for (var j = 0; j < chance; j++) {
-				var extbox = createSprite(spacing, 224 - 48 * j);
-				var loot = randomNumber(1, max((25 - (floor(flux / 15))), 20)); //chance to spawn loot (health and more point giving gold box)
-				if (flux >= 40) {
-					loot = randomNumber(1, min((25 + floor((flux) * 0.2)), 75));
-				}
-				if (loot <= 2 && bonusy) {
-					extbox.setAnimation(ima + "box_mystery" + suf);
-					extbox.type = "bonus";
-				} else if (stage > 5 && ((loot == 3) || (((loot == 3) || (loot == 4)) && (flux >= 20))) && boomy) {
-					extbox.setAnimation(ima + "box_boom" + suf);
-					extbox.type = "boom";
-				} else if (stage > 5 && ((loot == 5) || (((loot == 5) || (loot == 6)) && (flux >= 20))) && buffy) {
-					extbox.setAnimation(ima + "box_buff" + suf);
-					extbox.type = "buff";
+				if (!expertMode || randomNumber(0, 2)) { // i.e. during expert mode, there's a 1/3 chance for a box not to spawn
+					var extbox = createSprite(spacing, 224 - 48 * j);
+					var loot = randomNumber(1, max((25 - (floor(flux / 15))), 20)); //chance to spawn loot (health and more point giving gold box)
+					if (flux >= 40) {
+						loot = randomNumber(1, min((25 + floor((flux) * 0.2)), 75));
+					}
+					if (expertMode) loot = randomNumber(1, 80);
+					if (loot <= 2 && bonusy) {
+						extbox.setAnimation(ima + "box_mystery" + suf);
+						extbox.type = "bonus";
+					} else if (stage > 5 && ((loot == 3) || (((loot == 3) || (loot == 4)) && (flux >= 20))) && boomy) {
+						extbox.setAnimation(ima + "box_boom" + suf);
+						extbox.type = "boom";
+					} else if (stage > 5 && ((loot == 5) || (((loot == 5) || (loot == 6)) && (flux >= 20))) && buffy) {
+						extbox.setAnimation(ima + "box_buff" + suf);
+						extbox.type = "buff";
+					} else {
+						extbox.setAnimation(ima + "box" + suf);
+						extbox.type = "normal";
+					}
+					extbox.pause();
+					boxs.add(extbox);
 				} else {
-					extbox.setAnimation(ima + "box" + suf);
-					extbox.type = "normal";
+					real_chance--;
 				}
-				extbox.pause();
-				boxs.add(extbox);
 			}
 		}
-		topchance = max(chance, topchance);
-		boxes = boxes + chance; //update the box count after the extra chance stacked ones appear.
+		topchance = max(real_chance, topchance);
+		boxes = boxes + real_chance; //update the box count after the extra chance stacked ones appear.
 	}
 	boxs.setDepthEach(0.02);
 	//there is a chance to spawn in a stack of badcubes at about 2/3 the stages' max box height
 	//these stacks ignore population control
-	var shonce = randomNumber(1, 10 + floor(flux / 5)); //every 5 levels there's a higher chance to spawn 2 stacks
+	var shonce = expertMode ? 20 : randomNumber(1, 10 + floor(flux / 5)); //every 5 levels there's a higher chance to spawn 2 stacks
 	if (inTutorial && lesson == 15) shonce = 5;
 	if (shonce >= 5 && badsy) { //if 8, 9 or 10 or more (the more the stages the more likely, spawn the first bad stack
 		var bad = createSprite(cube.x + spacing + 200, 272);
 		bad.setAnimation(ima + "bad_cube" + suf);
 		bads.add(bad);
 		bad.pause();
-		var bextras = min(round(2 * (floor(flux / 10) + 3) / 3), 4);
+		var bextras = min(round(2 * (floor(flux / 10) + 3) / 3), expertMode ? 6 : 4);
 		if (flux < 6) bextras = 1;
 		duchance = randomNumber(0, bextras); //chances of a stacked box tower;
 		if (bads.length + savedBads.length + duchance > 20) {//if duchance will exceed spawn limit
@@ -947,7 +959,7 @@ function boxSetUp(x, flux, bonusy, boomy, buffy, spicy, badsy) {
 		var secbad = createSprite(cube.x + spacing + 500, 273);
 		secbad.setAnimation(ima + "bad_cube" + suf);
 		bads.add(secbad);
-		var bbextras = min(round(2 * (floor(flux / 10) + 3) / 3), 3);
+		var bbextras = min(round(2 * (floor(flux / 10) + 3) / 3), expertMode ? 5 : 3);
 		if (flux < 6) bbextras = 1;
 		duchance = randomNumber(0, bbextras); //chances of a stacked box tower;
 		if (bads.length + savedBads.length + duchance > 20) {//if duchance will exceed spawn limit
@@ -968,6 +980,8 @@ function boxPhysics() {
   var kin = ((buff == "superKinetic") ? 1.5 : 1); //movement multiplier
 	if (speedMode) {
 		kin = ((buff == "superKinetic") ? 2.25 : 1.5);
+	} else if (expertMode) {
+		kin = ((buff == "superKinetic") ? 1.9 : 1.25);
 	}
 	boxs.setDepthEach(0.02);
 	//hitbox following underneath and ahead. 
@@ -977,8 +991,8 @@ function boxPhysics() {
 	smashbox.x = cube.x + hspd;
 	smashbox.y = cube.y + vspd;
 	if (kdown && !grounded) {
-		if (buff == "superKinetic" || speedMode || vspd > 55) {
-		  smashbox.height += vspd * (2 + 8 * (speedMode && buff == "superKinetic"));
+		if (buff == "superKinetic" || speedMode || vspd > 55 || expertMode) {
+		  smashbox.height += vspd * (2 + 8 * ((speedMode || expertMode) && buff == "superKinetic"));
 		  if (hspd != 0) {
 		    smashbox.width = 65;
 		  }
@@ -1043,7 +1057,7 @@ function boxPhysics() {
 					if (cbox.type == "bonus") {
 						var luck = 25 * randomNumber(1, 4);
 						if (!speedMode) {
-							hp += luck;
+							hp = expertMode ? hp + 25 * randomNumber(1, 2) : hp + luck;
 						}
 						score += luck;
 						bonuses++;
@@ -1138,7 +1152,9 @@ function boxPhysics() {
 				}
 				//jumping off the top of a box
 				if ((kjump) && (!teeth)) {
-					if (buff == "superKinetic" || speedMode) vspd += -jppwr * 1.5;
+					if (buff == "superKinetic" && speedMode) vspd += -jppwr * 2.25;
+					else if (buff == "superKinetic" || speedMode) vspd += -jppwr * 1.5;
+					else if (expertMode) vspd += -jppwr * 1.25;
 					else vspd += -jppwr;
 					if (!sMute) playSound("sounds/category_swish/fast_swish.mp3", false);
 					cube.y += vspd;
@@ -1406,7 +1422,7 @@ function thornMechanics() {
 		}
 		//hurting/getting killed - interactions with player
 		if (ithorn.y > 296) ithorn.destroy(); //if it goes to deep by mistake, well, you're lucky, this is rare, but must be regulated.
-		if (((ithorn.y == 272) && (kdown) && (vspd == 0) && (acspd > 5) && cube.isTouching(ithorn)) || ithorn.isTouching(explos)) { //you must hit  it from the side whilst moving in crouch position
+		if (((ithorn.y == 272) && (kdown) && (vspd == 0) && (acspd > 5) && cube.isTouching(ithorn)) || ithorn.isTouching(explos) || ithorn.x > 2000) { //you must hit  it from the side whilst moving in crouch position
 			ithorn.destroy();
 			killedaThorn = true;
 			if (thornsTotal == 0 && thorns.length > 0 && rustickCount >= 100) rustickCount = 0;
@@ -1464,14 +1480,14 @@ function shootersPhysics() {
 			if (tttm > 0) {
 				tttm--;
 			} else {
-				tttm = max((160 - floor(stage / 5) * 10), 100);
+				tttm = expertMode ? 100 : max((160 - floor(stage / 5) * 10), 100);
 				xtarget = randomNumber(-200, 200); //change target
 			}
 			//follow targeted point
 			if (ball.x > camera.x + xtarget) ball.x -= max(abs(hspd / 2), 2);
 			if (ball.x < camera.x + xtarget) ball.x += max(abs(hspd / 2), 2);
 			//shoot fireballs counter
-			var interval = max(8, (floor(60 / (max(floor(stage / 10), 1)))));
+			var interval = max(8 - 4 * expertMode, (floor(60 / (max(floor(stage / 10), 1)))));
 			if (inTutorial && (lesson == 14 || lesson == 15)) interval = 20;
 			if (interval < 5) interval = 5;
 			if (animate) {
@@ -1515,7 +1531,11 @@ function shootersPhysics() {
 			ball.rotation = 0;
 		}
 		//death
-		if ((hpe <= 0) || (ball.isTouching(explos))) {
+		if (expertMode && ball.isTouching(explos) && (hpe - 2 > 0) && ball.rotationSpeed == 0) {
+			hpe -= 2;
+			ball.rotationSpeed = 50;
+			print("hey now");
+		} else if (((hpe <= 0) || (ball.isTouching(explos))) && (!expertMode || ball.rotationSpeed == 0)) {
 			if (!ball.isTouching(explos)) {
 				squash++;
 				score += 50 + stage;
@@ -1538,7 +1558,7 @@ function shootersPhysics() {
 	//fireballs (bullets)
 	for (var j = 0; j < bullets.length; j++) {
 		var fir = bullets.get(j);
-		var normalSpd = min(max(12, stage * 0.6), 17);
+		var normalSpd = min(max(12, stage * (0.6 + 0.4 * expertMode)), 17 + 8 * expertMode);
 		//fireball movement
 		if (willpause) {//freeze fireballs when paused
 			fir.setSpeedAndDirection(0, fir.rotation);
@@ -1564,7 +1584,7 @@ function shootersPhysics() {
 			fir.destroy();
 		}
 		//lag prevention - getting rid of fireballs that went far away
-		if (fir.x > 1920 || fir.y < -600) {
+		if (fir.x > 1920 || fir.x < -800 || fir.y < -600 || fir.y > 275) {
 			fir.destroy();
 		}
 	}
@@ -1573,12 +1593,12 @@ function shootersPhysics() {
 function spawnFoes() {
 	//spawn bad cubes
 	var spawntime = 0;
-	if (bads.length < 10) { //decrease time left until spawning when the population is under the maximum
-		spawntime = max(1200 / (floor(stage / 10) + 1), 100);
+	if (bads.length < 10 + 30 * expertMode) { //decrease time left until spawning when the population is under the maximum
+		spawntime = max(1200 / (floor(stage / 10) + 1), 100 - 50 * expertMode);
 		if ((spawner < spawntime) && (stage != 0)) spawner++;
 	}
-	if ((spawner >= spawntime) && (bads.length < 10) && (boxes > 0)) { //spawn a random enemy from time to time
-		var bad = createSprite(2000, 272); //hold it away for this line x pos wise.
+	if ((spawner >= spawntime) && (bads.length < 10 + 30 * expertMode) && (boxes > 0)) { //spawn a random enemy from time to time
+		var bad = createSprite(2000, 272 - expertMode * randomNumber(0, topchance * 24)); //hold it away for this line x pos wise.
 		var choice = randomNumber(1, 2); //spawn before or after player's x coord, and not in it's 400px range
 		if (choice == 1) bad.x = randomNumber(150, cube.x - 200);
 		if (choice == 2 || cube.x < 350) bad.x = randomNumber(cube.x + 200, 1500);
@@ -1589,7 +1609,7 @@ function spawnFoes() {
 		if (!sMute) playSound("sounds/category_transition/puzzle_game_upgrade_big_03.mp3", false);
 	}
 	//spawn thorn heads
-	if ((stage >= 5) && (thorns.length <= 15) && (boxes > 0)) { //if in a stage above stage 9 and with less than 9 thorns
+	if ((stage >= 5 * max(1, !expertMode)) && (thorns.length <= 15 + 5 * expertMode) && (boxes > 0)) { //if in a stage above stage 9 and with less than 9 thorns
 		if (tspawner < tspawntime) tspawner++;
 		else {
 			var thorn = createSprite(2000, 272);
@@ -1619,6 +1639,7 @@ function hurt(dmg, rec, sound) {
 		hits++;
 		if (speedMode && dmg > 0) {
 			comboTimer = floor(comboTimer / 2);
+			if (comboTimer % 2 != 0) comboTimer++;
 			if (buff != "thornArmor") {
 				score = max(0, score - dmg / 10);
 				if (score == 0) comboTimer = 0;
@@ -1643,7 +1664,7 @@ function powerUps() {
 			if (!sMute) playSound("sounds/category_digital/power_down_2.mp3", false);
 		}
 		if (curPowers.length > 0 && !justHadPower) { //in the case that you have no other power after scrapping your current, this will return false
-			using = timelimit - min(stage, 40); //this means you are now using the first item in the current powers array
+			using = timelimit - min(stage, 40 + 60 * expertMode); //this means you are now using the first item in the current powers array
 			if (!sMute) playSound("sounds/category_collect/vibrant_game_power_booster_touch.mp3", false);
 		}
 	}
@@ -1897,7 +1918,7 @@ function gui() {
 		combobar.x = camera.x + 85;
 		combobar.y = camera.y - 262
 		if (comboTimer > 0 && combo > 0) {
-			combobar.setFrame(ceil(abs(comboTimer / (comboTop / 20))));
+			combobar.setFrame(ceil(abs((comboTimer / 2) / (comboTop / 40))));
 		} else {
 			combobar.setFrame(0);
 		}
@@ -2106,7 +2127,7 @@ function displayStats() {
 			var yrel = camera.y; //y relative
 			//These are the current game stats: stage, score, hp, boxes, broke, hits, squash, dista, jumps, quake, resets
 			var allStatsKeys = ["Stage", (speedMode ? "Highest Combo" : "Score"), "Health Points", "Hits Taken", "Boxes Left", "Boxes Broke", "Foes Left", "Foes Squashed", "Steps Moved", "Jumps Made", "Quake Rating", "Resets/Skips", "Explosions", "Bonuses", "Power ups"];
-			var allStatsValues = [stage, (speedMode ? topcombo : floor(score * 100)), hp, hits, boxes, broke, bads.length + thorns.length + shooters.length + savedBads.length + savedThorns.length + savedEyes.length, squash, floor(dista / 48), jumps, floor(quake * 10), resets, explosions, bonuses, powerups];
+			var allStatsValues = [stage, (speedMode ? topcombo : floor(score * 100 * (expertMode * 4 + 1))), hp, hits, boxes, broke, bads.length + thorns.length + shooters.length + savedBads.length + savedThorns.length + savedEyes.length, squash, floor(dista / 48), jumps, floor(quake * 10), resets, explosions, bonuses, powerups];
 			if (inTutorial) {
 			allStatsKeys = [
 			  "Basic movement", "Wall jumping", "Quaking the ground", "Moving quickly",
@@ -2220,7 +2241,7 @@ function recordData() { //this function records the in game variables to the all
 	} else {
 		topstage = max(topstage, stage); //stage record
 		//highscore management
-		var actualScore = floor(score * 100);
+		var actualScore = floor(score * 100 * (expertMode * 4 + 1));
 		highscores.push(actualScore); //now there are 11 items in the array
 		highscores.sort(function(a, b) {
 			return b - a;
@@ -2366,6 +2387,7 @@ function death() {
 			if (!sMute) playSound("sounds/category_transition/slow_time.mp3", false);
 			if (!sMute) playSound("sounds/category_explosion/vibrant_game_bright_distroy_item_1.mp3", false);
 			if (!inTutorial) saveGame();
+			bullets.destroyEach();
 		}
 		if (cube.scale > 0.1) cube.scale -= 0.1;
 		else cube.visible = false;
@@ -2476,7 +2498,7 @@ function screenText() {
 		}
 
 		//gui text (score, stage count and box count)
-		var actScore = floor(score * 100);
+		var actScore = floor(score * 100 * (expertMode * 4 + 1));
 		var stageGui = stage;
 		if (inTutorial) {
 			if (!speedMode) actScore = lessonName[lesson]; //the score is replaced with lesson name in the tutorial
@@ -2650,12 +2672,14 @@ function draw() {
 		textFont(myFontNormal);
 		text(frameRater, camera.x - 300 - hspd, camera.y + 300);
 		if (sinCounter % 3 == 0) frameRater = round(World.frameRate);
-		text(scoreLoss, camera.x - 300 - hspd, camera.y + 270);
-		if (sinCounter % 3 == 0) scoreLoss = buff == "superKinetic" ? 0 : floor(100 * (- max(0, min(1, floor((stage - 70) / 10) / 20)) - 3 * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3) + combo / 100));
+		if (speedMode) {
+			if (sinCounter % 3 == 0) scoreLoss = buff == "superKinetic" ? 0 : floor(100 * (- max(0, min(1, floor((stage - 70) / 10) / 20)) - 3 * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3) + combo / 100));
+			text(min(0, scoreLoss), camera.x - 300 - hspd, camera.y + 270);
+		}
 		// hitbox.visible = true;
 		// smashbox.visible = true;
 		// tallbox.visible = true;
-		// let targetstage = 80
+		// let targetstage = 100
 		// if (stage < targetstage) goto(targetstage);
 	}
 	if (sinCounter < 360) {
@@ -3381,7 +3405,7 @@ function getDirdir() {
 	}
 	var theme = ["Original", "Night", "Vintage", "Winter"];
 	var themeNum = 0;
-	var gmodes = ["Normal Mode", "Speed Mode"]
+	var gmodes = ["Normal Mode", "Speed Mode", "Expert Mode"]
 	var gmode = 0;
 }
 /*
@@ -3687,15 +3711,23 @@ function settingsPlace() {
 					case 8:
 						if (gmode < gmodes.length - 1) {
 							gmode++;
+							if (unlocked[23] && gmode == 2) gmode = 0; //can't use expert mode unless you got over stage 80
 						} else gmode = 0;
 						switch (gmode) {
 							case 0:
 								speedMode = false;
+								expertMode = false;
 								score = 0;
 								break;
 							case 1:
 								speedMode = true;
 								score = 500;
+								expertMode = false;
+								break;
+							case 2:
+								speedMode = false;
+								expertMode = true;
+								score = 0;
 								break;
 							default:
 								speedMode = false;
@@ -4015,8 +4047,9 @@ function transition() {
 			if (suf == "_night" || suf == "_snow") fill("aqua");
 			if (!colour) fill("white");
 			if (origin == "Tutorial") { //splash text varies depending on where you're coming from or where you're going
-				if (!playing) text(tutorTips[helptip], camera.x, camera.y);
-				else {
+				if (!playing) {
+					text(tutorTips[helptip], camera.x, camera.y);
+				} else {
 					text(tutorBye[byetip], camera.x, camera.y);
 					achBar.visible = false;
 				}
@@ -4024,9 +4057,10 @@ function transition() {
 				if (speedMode) {
 					text(speedmodeTips[helptip], camera.x, camera.y);
 				} else {
-					if (!playing) text(tips[helptip], camera.x, camera.y);
-					else {
-						text(bye[byetip], camera.x, camera.y);
+					if (!playing) {
+						text(expertMode ? "Achievements can't be earned in Expert Mode" : tips[helptip], camera.x, camera.y);
+					} else {
+						text(expertMode ? "Your score is multiplied by 5 in Expert Mode" : bye[byetip], camera.x, camera.y);
 						achBar.visible = false;
 					}
 				}
@@ -4313,160 +4347,161 @@ function achUnlock(num) {
 
 function achievementWatchers() {
 	//Use all of the power ups in one game
-	if (!speedMode) {
-		switch (buff) {
-			case "thornArmor":
-				powersHad[0] = true;
-				break;
-			case "gigaCube":
-				powersHad[1] = true;
-				break;
-			case "superKinetic":
-				powersHad[2] = true;
-				break;
-			case "quakeStun":
-				powersHad[3] = true;
-				break;
-			case "tripleJump":
-				powersHad[4] = true;
-				break;
-			default:
-				//nothing
-				break;
-		}
-		if (powersHad[0] && powersHad[1] && powersHad[2] && powersHad[3] && powersHad[4]) {
-			achUnlock(1);
-		}
-		//Have 10 Thorn-Heads present at once
-		if (thorns.length + savedThorns.length >= 10) achUnlock(2);
-		//don't destroy an evil eye before stage 30
-		if (stage >= 10 && shooters.length < 1) eyeExists = false;
-		if (stage >= 30 && eyeExists) achUnlock(4);
-		//Have 10 bad cubes present on stage 10
-		if (stage == 10 && bads.length == 10) achUnlock(7);
-		//Get a score of over 500,000
-		if (floor(score * 100) > 500000) achUnlock(11);
-		//Get a score of over 1,000,000
-		if (floor(score * 100) > 1000000) achUnlock(12);
-		//Get a score of over 2,500,000
-		if (floor(score * 100) > 2500000) achUnlock(13);
-		//Break 100 boxes before stage 10
-		if (broke >= 100 && stage < 10) achUnlock(15);
-		//Have 50 boxes remaining
-		if (boxes == 50) achUnlock(16);
-		//Destroy 100 foes before stage 20
-		if (squash >= 100 && stage < 20) achUnlock(20);
-		//Destroy 50 Evil Eyes in total
-		if (eyesTotal >= 50) achUnlock(21);
-		//Reach stage 15
-		if (stage >= 20) achUnlock(22);
-		//Reach stage 30
-		if (stage >= 40) achUnlock(23);
-		//Reach stage 45
-		if (stage >= 60) achUnlock(24);
-		//Reach stage 60
-		if (stage >= 80) achUnlock(25);
-		//get to stage 100
-		if (stage >= 100) achUnlock(42);
-		//Reach stage 15 without getting hit
-		if (stage >= 15 && hits == 0) achUnlock(27);
-		//How high can you go?
-		if (maxht < -950) achUnlock(31); //to do this you need to have 3 triplejump powers ready, then go far to the right and start climbing up the wall whilst refreshing power when necessary
-		//Reach stage 20 without using a power up
-		if (stage >= 20 && !powersHad[0] && !powersHad[1] && !powersHad[2] && !powersHad[3] && !powersHad[4]) achUnlock(35);
-		//Reach stage 35 without going far to the right
-		if (stage >= 35 && resets == 0) achUnlock(36);
-		//Get game over on stage 1
-		if (stage == 1 && hp <= 0) achUnlock(37);
-		//Have 20 foes present at once
-		if (bads.length + thorns.length + shooters.length + savedBads.length + savedThorns.length >= 20) achUnlock(38);
-		//Reach stage 30 without getting hit
-		if (stage >= 30 && hits == 0) achUnlock(43);
-
-	} else { //SPEEDMODE ACHIEVEMENTS:
-		//get to stage 20 in speed mode
-		if (stage >= 20 && speedMode) achUnlock(47);
-		//get to stage 40 in speed mode
-		if (stage >= 40 && speedMode) achUnlock(48);
-		//get to stage 60 in speed mode
-		if (stage >= 60 && speedMode) achUnlock(49);
-		//get to stage 80 in speed mode
-		if (stage >= 80 && speedMode) achUnlock(50);
-		//get to stage 100 in speed mode
-		if (stage >= 100 && speedMode) achUnlock(51);
-		//get a combo of 100 in speed mode
-		if (topcombo >= 100 && speedMode) achUnlock(52);
-		//get a combo of 200 in speed mode
-		if (topcombo >= 200 && speedMode) achUnlock(53);
-		//get a combo of 500 in speed mode
-		if (topcombo >= 500 && speedMode) achUnlock(54);
-		//get a combo of 1000 in speed mode
-		if (topcombo >= 1000 && speedMode) achUnlock(55);
-		// reach super speed
-		if (hspd >= 33.5 && speedMode && buff == "superKinetic") achUnlock(56);
-		// game over with time left in speed mode
-		if (hp <= 0 && score >= 0 && speedMode) achUnlock(57);
-		// get to stage 25 in speed mode without getting a combo over 100 (stop 'n go)
-		if (topcombo < 100 && stage >= 25) achUnlock(58);
-		// get to stage 25 in speed mode without losing your combo (P-rank) 
-		if (!lostcombo && stage >= 25) achUnlock(59);
-		// rebound from under 100 timer to 100000 in speed mode (zero to hero)
-		if (score >= 999 && scrapedBy) achUnlock(60);
-		// reset the stage 4 times in a row without touching the ground (speed mode ach) (teleporter)
-		if (airresets >= 4) achUnlock(61);
-	}
-	//NON GAMEMODE SPECIFIC ACHIEVEMENTS:
-	//play 1 game
-	if (games >= 1) achUnlock(8);
-	//play 10 games
-	if (games >= 10) achUnlock(9);
-	//play 50 games
-	if (games >= 50) achUnlock(10);
-	//Destroy a total of 2,000 foes
-	if (totalSquash + squash >= 2000) achUnlock(5);
-	//Move 10,000 steps in total
-	if (floor(totalDista / 48) + floor(dista / 48) >= 10000) achUnlock(6);
-	//Break 100 buff boxes
-	if (totalPowerups + powerups >= 100) achUnlock(32);
-	//Break 200 boom boxes
-	if (totalExplosions + explosions >= 200) achUnlock(33);
-	//Break 300 bonus boxes
-	if (totalBonuses + bonuses >= 300) achUnlock(34);
-	//Get hit a total of 1000 times
-	if (totalHits + hits >= 1000) achUnlock(28);
-	//Jump 1000 times in total
-	if (totalJumps + jumps >= 1000) achUnlock(29);
-	//Just sit and wait
-	if (!unlocked[30]) {
-		if (playing && !pause && !willpause && !kleft && !kright && !kjump && !kdown && !kuse) idleTimer++;
-		else idleTimer = 0;
-	}
-	if (idleTimer >= 2000) achUnlock(30);
-	//Reach a total quake rating of 2,500
-	if (floor(totalQuake * 10) + floor(quake * 10) >= 2500) achUnlock(26);
-
-	//Break a total of 1000 boxes
-	if (totalBroke + broke >= 1000) achUnlock(14);
-	//Break a total of 10,000 boxes
-	if (totalBroke + broke >= 10000) achUnlock(17);
-	//Destroy 100 Thorn-Heads in total
-	if (thornsTotal >= 100) achUnlock(18);
-	//Destroy 1000 Bad Cubes in total 
-	if (badsTotal >= 1000) achUnlock(19);
-	// Break a total of 50,000 boxes
-	if (totalBroke + broke >= 10000) achUnlock(44);
-	// destroy a total of 10,000 enemies
-	if (badsTotal + thornsTotal + eyesTotal >= 10000) achUnlock(45);
-	// get to a score of 3000000+ before stage 50 in normal mode (high on score)
-	if (floor(score * 100) >= 3000000 && stage < 50 && !speedMode) achUnlock(46);
+	if (!expertMode) {
+		if (!speedMode) {
+			switch (buff) {
+				case "thornArmor":
+					powersHad[0] = true;
+					break;
+				case "gigaCube":
+					powersHad[1] = true;
+					break;
+				case "superKinetic":
+					powersHad[2] = true;
+					break;
+				case "quakeStun":
+					powersHad[3] = true;
+					break;
+				case "tripleJump":
+					powersHad[4] = true;
+					break;
+				default:
+					//nothing
+					break;
+			}
+			if (powersHad[0] && powersHad[1] && powersHad[2] && powersHad[3] && powersHad[4]) {
+				achUnlock(1);
+			}
+			//Have 10 Thorn-Heads present at once
+			if (thorns.length + savedThorns.length >= 10) achUnlock(2);
+			//don't destroy an evil eye before stage 30
+			if (stage >= 10 && shooters.length < 1) eyeExists = false;
+			if (stage >= 30 && eyeExists) achUnlock(4);
+			//Have 10 bad cubes present on stage 10
+			if (stage == 10 && bads.length == 10) achUnlock(7);
+			//Get a score of over 500,000
+			if (floor(score * 100) > 500000) achUnlock(11);
+			//Get a score of over 1,000,000
+			if (floor(score * 100) > 1000000) achUnlock(12);
+			//Get a score of over 2,500,000
+			if (floor(score * 100) > 2500000) achUnlock(13);
+			//Break 100 boxes before stage 10
+			if (broke >= 100 && stage < 10) achUnlock(15);
+			//Have 50 boxes remaining
+			if (boxes == 50) achUnlock(16);
+			//Destroy 100 foes before stage 20
+			if (squash >= 100 && stage < 20) achUnlock(20);
+			//Destroy 50 Evil Eyes in total
+			if (eyesTotal >= 50) achUnlock(21);
+			//Reach stage 15
+			if (stage >= 15) achUnlock(22);
+			//Reach stage 30
+			if (stage >= 30) achUnlock(23);
+			//Reach stage 50
+			if (stage >= 50) achUnlock(24);
+			//Reach stage 75
+			if (stage >= 75) achUnlock(25);
+			//get to stage 100
+			if (stage >= 100) achUnlock(42);
+			//Reach stage 15 without getting hit
+			if (stage >= 15 && hits == 0) achUnlock(27);
+			//How high can you go?
+			if (maxht < -950) achUnlock(31); //to do this you need to have 3 triplejump powers ready, then go far to the right and start climbing up the wall whilst refreshing power when necessary
+			//Reach stage 20 without using a power up
+			if (stage >= 20 && !powersHad[0] && !powersHad[1] && !powersHad[2] && !powersHad[3] && !powersHad[4]) achUnlock(35);
+			//Reach stage 35 without going far to the right
+			if (stage >= 35 && resets == 0) achUnlock(36);
+			//Get game over on stage 1
+			if (stage == 1 && hp <= 0) achUnlock(37);
+			//Have 20 foes present at once
+			if (bads.length + thorns.length + shooters.length + savedBads.length + savedThorns.length >= 20) achUnlock(38);
+			//Reach stage 30 without getting hit
+			if (stage >= 30 && hits == 0) achUnlock(43);
 	
+		} else { //SPEEDMODE ACHIEVEMENTS:
+			//get to stage 20 in speed mode
+			if (stage >= 20 && speedMode) achUnlock(47);
+			//get to stage 40 in speed mode
+			if (stage >= 40 && speedMode) achUnlock(48);
+			//get to stage 60 in speed mode
+			if (stage >= 60 && speedMode) achUnlock(49);
+			//get to stage 80 in speed mode
+			if (stage >= 80 && speedMode) achUnlock(50);
+			//get to stage 100 in speed mode
+			if (stage >= 100 && speedMode) achUnlock(51);
+			//get a combo of 100 in speed mode
+			if (topcombo >= 100 && speedMode) achUnlock(52);
+			//get a combo of 200 in speed mode
+			if (topcombo >= 200 && speedMode) achUnlock(53);
+			//get a combo of 500 in speed mode
+			if (topcombo >= 500 && speedMode) achUnlock(54);
+			//get a combo of 1000 in speed mode
+			if (topcombo >= 1000 && speedMode) achUnlock(55);
+			// reach super speed
+			if (hspd >= 33.5 && speedMode && buff == "superKinetic") achUnlock(56);
+			// game over with time left in speed mode
+			if (hp <= 0 && score >= 0 && speedMode) achUnlock(57);
+			// get to stage 25 in speed mode without getting a combo over 100 (stop 'n go)
+			if (topcombo < 100 && stage >= 25) achUnlock(58);
+			// get to stage 25 in speed mode without losing your combo (P-rank) 
+			if (!lostcombo && stage >= 25) achUnlock(59);
+			// rebound from under 100 timer to 100000 in speed mode (zero to hero)
+			if (score >= 999 && scrapedBy) achUnlock(60);
+			// reset the stage 4 times in a row without touching the ground (speed mode ach) (teleporter)
+			if (airresets >= 4) achUnlock(61);
+		}
+		//NON GAMEMODE SPECIFIC ACHIEVEMENTS:
+		//play 1 game
+		if (games >= 1) achUnlock(8);
+		//play 10 games
+		if (games >= 10) achUnlock(9);
+		//play 50 games
+		if (games >= 50) achUnlock(10);
+		//Destroy a total of 2,000 foes
+		if (totalSquash + squash >= 2000) achUnlock(5);
+		//Move 10,000 steps in total
+		if (floor(totalDista / 48) + floor(dista / 48) >= 10000) achUnlock(6);
+		//Break 100 buff boxes
+		if (totalPowerups + powerups >= 100) achUnlock(32);
+		//Break 200 boom boxes
+		if (totalExplosions + explosions >= 200) achUnlock(33);
+		//Break 300 bonus boxes
+		if (totalBonuses + bonuses >= 300) achUnlock(34);
+		//Get hit a total of 1000 times
+		if (totalHits + hits >= 1000) achUnlock(28);
+		//Jump 1000 times in total
+		if (totalJumps + jumps >= 1000) achUnlock(29);
+		//Just sit and wait
+		if (!unlocked[30]) {
+			if (playing && !pause && !willpause && !kleft && !kright && !kjump && !kdown && !kuse) idleTimer++;
+			else idleTimer = 0;
+		}
+		if (idleTimer >= 2000) achUnlock(30);
+		//Reach a total quake rating of 2,500
+		if (floor(totalQuake * 10) + floor(quake * 10) >= 2500) achUnlock(26);
+	
+		//Break a total of 1000 boxes
+		if (totalBroke + broke >= 1000) achUnlock(14);
+		//Break a total of 10,000 boxes
+		if (totalBroke + broke >= 10000) achUnlock(17);
+		//Destroy 100 Thorn-Heads in total
+		if (thornsTotal >= 100) achUnlock(18);
+		//Destroy 1000 Bad Cubes in total 
+		if (badsTotal >= 1000) achUnlock(19);
+		// Break a total of 25,000 boxes
+		if (totalBroke + broke >= 25000) achUnlock(44);
+		// destroy a total of 10,000 enemies
+		if (badsTotal + thornsTotal + eyesTotal >= 10000) achUnlock(45);
+		// get to a score of 3000000+ before stage 50 in normal mode (high on score)
+		if (floor(score * 100) >= 3000000 && stage < 50 && !speedMode) achUnlock(46);
+	}
 } 
 {
 	//what you have to do to earn achievement - the index number of each one corresponds to it's icon's index in the skins array
 	var achGoals = ["Default", "Use all of the power ups in one game", "Have 10 Thorn-Heads present at once", "Complete the tutorial", "Don't destroy the evil eye before stage 30", 
 					"Destroy a total of 2,000 foes", "Move 10,000 steps in total", "Have 10 bad cubes present on stage 10", "Play 1 game", "Play 10 games", "Play 50 games", "Get a score of over 500,000", 
 					"Get a score of over 1,000,000", "Get a score of over 2,500,000", "Break a total of 1,000 boxes", "Break 100 boxes before stage 10", "Have 50 boxes remaining", "Break a total of 10,000 boxes", 
-					"Destroy 100 Thorn-Heads in total", "Destroy 1000 Bad Cubes in total", "Destroy 100 foes before stage 20", "Destroy 50 Evil Eyes in total", "Reach stage 20", "Reach stage 40", "Reach stage 60", "Reach stage 80", 
+					"Destroy 100 Thorn-Heads in total", "Destroy 1000 Bad Cubes in total", "Destroy 100 foes before stage 20", "Destroy 50 Evil Eyes in total", "Reach stage 15", "Reach stage 30", "Reach stage 50", "Reach stage 75", 
 					"Reach a total quake rating of 2,500", "Reach stage 15 without getting hit", "Get hit a total of 1,000 times", "Jump 1,000 times in total", "Just sit and wait", "How high can you go?", "Break 100 buff boxes total", 
 					"Break 200 boom boxes total", "Break 300 bonus boxes total", "Reach stage 20 without using a power up", "Reach stage 35 without resetting", "Get game over on stage 1", "Have 20 foes present at once", 
 					"Destroy an Evil Eye past stage 29", ":)", "???", "Reach stage 100", "Reach stage 30 without getting hit", "Break a total of 50,000 boxes", "Destroy a total of 10,000 enemies", "Score 3,000,000 before stage 50",
@@ -4476,7 +4511,7 @@ function achievementWatchers() {
 	//the name of the achievement (this is just for fun)
 	var achNames = ["The starter costume", "You have the power within", "Overgrown", "You got schooled!", "Eye'll show you mercy", "Heart of coal", "Marathon slider", "That's oddly specific", "New beginnings", "One of the usuals", "Veteran player", 
 					"You get the point", "Millionaire", "Score grinder", "I think you need a break", "Practice makes perfect", "Lucky stacks", "Broken to bits", "A real thorn in the side", "Maybe you're the bad cube?", "Psychocube", "Eye'll show you suffering", 
-					"Novice", "Advanced", "Expert", "Master", "Bloquake? More like earthquake", "Untouchable", "Punching bag", "Geometry Jump", "Remember: press 'p' to pause", "The sky's the unlimited", "I... feel... POWERFUL", "KABOOM!", "Health & Wealth", "Staying true to form", 
+					"Novice", "Advanced", "Expert (Unlocks Expert Mode)", "Master", "Bloquake? More like earthquake", "Untouchable", "Punching bag", "Geometry Jump", "Remember: press 'p' to pause", "The sky's the unlimited", "I... feel... POWERFUL", "KABOOM!", "Health & Wealth", "Staying true to form", 
 					"No flying boxes, thank you", "Seriously? That's silly", "Monster party!", "Levitating fireball shooting eyeball", "Never hide your smile", "A spicy surprise!", "The Bloquake Champion", "Invincible", "Serious dedication", "The Bloquake Menace", "High on score",
 					"Gotta go fast", "Need4speed", "Stayin' Alive at the speed of light", "Unbeatable clock beater", "The Bloquake Speed Legend", "Sequential Breakages", "Timer? What Timer?", "Dude, you're on fire!", "Combolord", "Flying across the screen", "Can't catch a break, eh?", 
 					"Stop 'n go", "P-rank", "Zero to Hero", "Teleporter", "Who's tutoring who?"];
@@ -4664,11 +4699,18 @@ function loadGame() {
 				switch (gmode) {
 					case 0:
 						speedMode = false;
+						expertMode = false;
 						score = 0;
 						break;
 					case 1:
 						speedMode = true;
+						expertMode = false;
 						score = 500;
+						break;
+					case 2:
+						speedMode = false;
+						expertMode = true;
+						score = 0;
 						break;
 					default:
 						speedMode = false;

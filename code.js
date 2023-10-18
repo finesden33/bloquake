@@ -1835,7 +1835,7 @@ function cameraMovement() {
 function resetKinda(message) {
 	if (dot.y > 200 && !inTutorial) { //if the dot is already above ground, meaning there is no reason to skip or reset, no penalties will apply
 		if (stage > 0) stage--;
-		if ((stage < 10 && boxes < 2) || (boxes > 2)) justReset = true;
+		if ((stage < 10) || (boxes > 2)) justReset = true;
 		recover = 60;
 		if (!inTutorial) console.log(message);
 	}

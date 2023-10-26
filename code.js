@@ -838,7 +838,7 @@ function playingStages() {
 		dot.y = 100 + 3 * sin(5 * sinCounter); //hovering;
 	}
 	if (speedMode) {
-		if (buff != "superKinetic" && score > 0) {
+		if ((buff != "superKinetic" && score > 0) && stage > 0) {
 			score = min(1000, min(score, 
 				max(0, score - max(0, min(1, floor((stage - 70) / 10) / 20)) - 3 * max(1, min(2, stage / 70)) * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3)) + combo / 100));  // gradually decrease score
 		} else {
@@ -2100,6 +2100,7 @@ function paused() {
 							savedBoxes = [];
 							teeth = true;
 							hp = 1000;
+							dead = false;
 							tutorialStageSetup();
 						} else if (option == 2 && !sMute) playSound("sounds/Metal-Bang3-672025076.mp3", false);
 					}
@@ -2129,18 +2130,18 @@ function displayStats() {
 			var allStatsKeys = ["Stage", (speedMode ? "Highest Combo" : "Score"), "Health Points", "Hits Taken", "Boxes Left", "Boxes Broke", "Foes Left", "Foes Squashed", "Steps Moved", "Jumps Made", "Quake Rating", "Resets/Skips", "Explosions", "Bonuses", "Power ups"];
 			var allStatsValues = [stage, (speedMode ? topcombo : floor(score * 100 * (expertMode * 4 + 1))), hp, hits, boxes, broke, bads.length + thorns.length + shooters.length + savedBads.length + savedThorns.length + savedEyes.length, squash, floor(dista / 48), jumps, floor(quake * 10), resets, explosions, bonuses, powerups];
 			if (inTutorial) {
-			allStatsKeys = [
-			  "Basic movement", "Wall jumping", "Quaking the ground", "Moving quickly",
-			  "Breaking a box", "Climbing a box stack",
-			  "The Aim of the game", "Mercy skips", "Resetting a stage",
-			  "Bad Cubes", "Stacks of Bad Cubes", "Stranded Bad Cubes", "Thorn Heads", "Evil Eye", "Large Evil Eye",
-			];
-			allStatsValues = [
-			  "Practice Stage", "Bonus Box", "Boom Box",
-			  "TripleJump", "GigaCube", "ThornArmor", "SuperKinetic", "QuakeStun",
-			  "Buff Box",
-			  "More Practice"
-			];
+				allStatsKeys = [
+				"Basic movement", "Wall jumping", "Quaking the ground", "Moving quickly",
+				"Breaking a box", "Climbing a box stack",
+				"The Aim of the game", "Mercy skips", "Resetting a stage",
+				"Bad Cubes", "Stacks of Bad Cubes", "Stranded Bad Cubes", "Thorn Heads", "Evil Eye", "Large Evil Eye",
+				];
+				allStatsValues = [
+				"Practice Stage", "Bonus Box", "Boom Box",
+				"TripleJump", "GigaCube", "ThornArmor", "SuperKinetic", "QuakeStun",
+				"Buff Box",
+				"More Practice"
+				];
 			}
 			
 			//header
@@ -2202,6 +2203,8 @@ function displayStats() {
 				sTml = getLines(speedTwords[lesson]);
 				makeLines();
 				stepMsg = 0;
+				hp = 1000;
+				dead = false;
   				tutorialStageSetup();
 			  } else if (inTutorial && lessonSelect == lesson) {
 			    //nothing
@@ -2265,6 +2268,7 @@ function restartGame() { //However, the main data is saved in local Storage
 	
 	if (speedMode) {
 		score = 500;
+		newToSpeedMode = false;
 	} else {
 		score = 0;
 	}
@@ -2567,31 +2571,36 @@ function screenText() {
 	if (statChecking == 0) cammy.y = camera.y;
 	
 	//mini tutorial for basics if you skipped the tutorial
-	if (!beatTutorial && games < 3 && playing && !inTutorial && !speedMode) {
-	  rustickCount = min(rustickCount+1, 500);
-	  var helperText = "";
-	  if (rustickCount >= 100 && !pause) {
-		if (dista == 0) {
-		  helperText = "Use the arrow-keys/AD to move";
-		} else if (stage == 0) {
-		  helperText = "Press Up/W to jump and touch the dot";
-		} else if (stage == 1 && broke == 0) {
-		  helperText = "Hold Down/S when falling to break boxes";
-		} else if (!killedaThorn && thorns.length > 0) {
-		  helperText = "Hold Down/S and slide into thorn's side";
-		} else if (curPowers.length > 0 && (!powersHad[0] && !powersHad[1] && !powersHad[2] && !powersHad[3] && !powersHad[4])) { 
-		  helperText = "Press shift to activate your powerup";
-		} else if (stage >= 10 && resets < 2 && rustickCount >= 250) {
-		  helperText = "Stuck? Go to far right to reset stage";
-		} else if (rustickCount > 500 && !hasMuted) {
-		  helperText = "Press M to mute music or N to mute sound";
+	if (playing && !inTutorial) {
+		rustickCount = min(rustickCount+1, 500);
+		var helperText = "";
+		if (speedMode && stage == 0 && newToSpeedMode) {
+			helperText = ["Important Speed Mode information", "Higher combo = slower timer", "Lower health = faster timer", "Health = 0 or Timer = 0 means Game Over", "Health only regenerates slowly over time"]
+			for (let i = 0; i < helperText.length; i++) {
+				write(helperText[i], camera.x, cube.y - 150 + 20 * i, myFontNormal, CENTER, 20, BOLD, true);	
+			}
+		} else if (rustickCount >= 100 && !pause && !beatTutorial && games < 3) {
+			if (dista == 0) {
+				helperText = "Use the arrow-keys/AD to move";
+			} else if (stage == 0) {
+				helperText = "Press Up/W to jump and touch the dot";
+			} else if (stage == 1 && broke == 0) {
+				helperText = "Hold Down/S when falling to break boxes";
+			} else if (!killedaThorn && thorns.length > 0) {
+				helperText = "Hold Down/S and slide into thorn's side";
+			} else if (curPowers.length > 0 && (!powersHad[0] && !powersHad[1] && !powersHad[2] && !powersHad[3] && !powersHad[4])) { 
+				helperText = "Press shift to activate your powerup";
+			} else if (stage >= 10 && resets < 2 && rustickCount >= 250) {
+				helperText = "Stuck? Go to far right to reset stage";
+			} else if (rustickCount > 500 && !hasMuted) {
+				helperText = "Press M to mute music or N to mute sound";
+			} else {
+				helperText = "";
+			}
+			write(helperText, camera.x, cube.y - 85, myFontNormal, CENTER, 20, BOLD, true);
 		} else {
-		  helperText = "";
-	    }
-	  } else {
-	    helperText = "";
-	  }
-	  write(helperText, camera.x, cube.y - 85, myFontNormal, CENTER, 20, BOLD, true);
+			helperText = "";
+		}	
 	}
 }
 
@@ -2673,7 +2682,7 @@ function draw() {
 		text(frameRater, camera.x - 300 - hspd, camera.y + 300);
 		if (sinCounter % 3 == 0) frameRater = round(World.frameRate);
 		if (speedMode) {
-			if (sinCounter % 3 == 0) scoreLoss = buff == "superKinetic" ? 0 : floor(100 * (- max(0, min(1, floor((stage - 70) / 10) / 20)) - 3 * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3) + combo / 100));
+			if (sinCounter % 3 == 0) scoreLoss = (buff == "superKinetic" || stage < 1) ? 0 : floor(100 * (- max(0, min(1, floor((stage - 70) / 10) / 20)) - 3 * (1 / (9 * (stun > 0) + 1)) * min(1000 / (hp * 2), 3) + combo / 100));
 			text(min(0, scoreLoss), camera.x - 300 - hspd, camera.y + 270);
 		}
 		// hitbox.visible = true;
@@ -2797,6 +2806,7 @@ function draw() {
 	var lessonsDone = 0;//actual amount of lessons completed
 	var lessonSelect = 0;//for lesson select page
 	var readStuff = false;
+	var newToSpeedMode = true;
 }
 
 function getLines(string) {
@@ -2904,6 +2914,7 @@ function tutorialStages() {
 		hp = 0;
 		canPlay = true;
 		beatTutorial = true;
+		if (speedMode) newToSpeedMode = false;
 		//Complete the tutorial achievement
 		achUnlock(3);
 	}
@@ -4578,6 +4589,7 @@ function debugCont() {
 function saveGame() {
 	if (typeof(Storage) !== "undefined") {
 		//game variables
+		localStorage.setItem("newToSpeedMode", newToSpeedMode);
 		localStorage.setItem("beatTutorial", beatTutorial);
 		localStorage.setItem("highscores", JSON.stringify(highscores));
 		localStorage.setItem("unlockedAchs", JSON.stringify(unlocked));
@@ -4647,6 +4659,9 @@ function loadGame() {
 			if (localStorage["topspeedstage"] !== undefined && localStorage["bestcombo"] !== undefined) {
 				topSpeedStage = JSON.parse(localStorage.getItem("topspeedstage"));
 				bestcombo = JSON.parse(localStorage.getItem("bestcombo"));
+			}
+			if (localStorage["newToSpeedMode"] !== undefined) {
+				newToSpeedMode = JSON.parse(localStorage.getItem("newToSpeedMode"));
 			}
 			//menu variables
 			costumes = JSON.parse(localStorage.getItem("costumesOn"));

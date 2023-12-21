@@ -2579,7 +2579,7 @@ function screenText() {
 			for (let i = 0; i < helperText.length; i++) {
 				write(helperText[i], camera.x, cube.y - 150 + 20 * i, myFontNormal, CENTER, 20, BOLD, true);	
 			}
-		} else if (rustickCount >= 100 && !pause && !beatTutorial && games < 3) {
+		} else if (rustickCount >= 100 && !pause && !beatTutorial && games < 3 && !speedMode) {
 			if (dista == 0) {
 				helperText = "Use the arrow-keys/AD to move";
 			} else if (stage == 0) {
@@ -4755,6 +4755,8 @@ function submitStats() {
 		kongregate.stats.submit('Tutorial Complete', ((beatTutorial) ? 1 : 0));
 		kongregate.stats.submit('Best Combo', bestcombo);
 		kongregate.stats.submit('Top Speed Mode Stage', topSpeedStage);
+	} else {
+		console.log("failed to submit stats");
 	}
 }
 

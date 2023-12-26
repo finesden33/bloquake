@@ -72,7 +72,7 @@ window.preload = function () {
 	"c65661fc-1376-428c-832b-b3d832a0802f","9a7c328c-026c-4d65-9cc5-12452ab3ba63",
 	"crown","crown_down", "lshape", "lshape_down", "clock", "clock_down", "dittle", "dittle_down", "skull", "skull_down", "light", "light_down",
 	"champ", "champ_down", "cry", "cry_down", "goldbox", "goldbox_down", "orange", "orange_down", "saw", "saw_down", "potion", "potion_down", "prime", "prime_down", "cage", "cage_down",
-	"shroom", "shroom_down", "target", "target_down", "creeper", "creeper_down", "pizza", "pizza_down", "meat",	"meat_down", "magic", "magic_down", "twoface", "twoface_down"],
+	"shroom", "shroom_down", "target", "target_down", "creeper", "creeper_down", "pizza", "pizza_down", "meat",	"meat_down", "magic", "magic_down", "twoface", "twoface_down", "vex", "vex_down"],
 	"propsByKey":{
 		"shroom":{"name":"c_cube_shroom","sourceUrl":null,"frameSize":{"x":48,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":48,"y":96},"rootRelativePath":"assets/wave2/shroom.png"},
 		"shroom_down":{"name":"c_cube_squish_shroom","sourceUrl":null,"frameSize":{"x":60,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":60,"y":96},"rootRelativePath":"assets/wave2/shroom_down.png"},
@@ -88,8 +88,8 @@ window.preload = function () {
 		"magic_down":{"name":"c_cube_squish_magic","sourceUrl":null,"frameSize":{"x":60,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":60,"y":96},"rootRelativePath":"assets/wave2/magic_down.png"},
 		"twoface":{"name":"c_cube_twoface","sourceUrl":null,"frameSize":{"x":48,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":48,"y":96},"rootRelativePath":"assets/wave2/twoface.png"},
 		"twoface_down":{"name":"c_cube_squish_twoface","sourceUrl":null,"frameSize":{"x":60,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":60,"y":96},"rootRelativePath":"assets/wave2/twoface_down.png"},
-
-
+		"vex":{"name":"cube_vex","sourceUrl":null,"frameSize":{"x":48,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":48,"y":96},"rootRelativePath":"assets/wave2/secret.png"},
+		"vex_down":{"name":"cube_squish_vex","sourceUrl":null,"frameSize":{"x":60,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":60,"y":96},"rootRelativePath":"assets/wave2/secret_down.png"},
 		"cage":{"name":"c_cube_cage","sourceUrl":null,"frameSize":{"x":48,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":48,"y":96},"rootRelativePath":"assets/wave2/cage.png"},
 		"cage_down":{"name":"c_cube_squish_cage","sourceUrl":null,"frameSize":{"x":60,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":60,"y":96},"rootRelativePath":"assets/wave2/cage_down.png"},
 		"prime":{"name":"c_cube_prime","sourceUrl":null,"frameSize":{"x":48,"y":48},"frameCount":2,"looping":true,"frameDelay":12,"version":"hLSBWs0H8VEBIWpowVbiXD87TXI2YnJp","loadedFromSource":true,"saved":true,"sourceSize":{"x":48,"y":96},"rootRelativePath":"assets/wave2/prime.png"},
@@ -513,7 +513,7 @@ function cubePhysics() {
 		if (acspd > maxspd) acspd -= decc * kin;
 	}
 	//max height checker (actually we check for min since height is less the higher up)
-	if (!inTutorial) maxht = min(maxht, cube.y);
+	if (!inTutorial && !speedMode) maxht = min(maxht, cube.y);
 	//walljump mechanics
 	//for left wall
 	if ((kjump) && (plum) && (!grounded)) {
@@ -661,9 +661,7 @@ function cubePhysics() {
 			if (!sMute) playSound("sounds/category_swish/deep_swish_2.mp3", false);
 			once1 = false;
 		}
-		if (true) { //what? what was I thinking when I coded this?
-			cube.setAnimation(ima + "cube_squish" + co);
-		} else cube.setAnimation(ima + "cube" + co);
+		cube.setAnimation(ima + "cube_squish" + co);
 		
 		cube.setCollider("rectangle", 0, 6, 60, 36);
 		if (buff != "gigaCube") {
@@ -1159,7 +1157,7 @@ function boxPhysics() {
 					if (!sMute) playSound("sounds/category_swish/fast_swish.mp3", false);
 					cube.y += vspd;
 					teeth = true;
-					score += 0.5;
+					score += 0.005;
 					jumps++;
 					djump++;
 					justJumped = 1;
@@ -1717,6 +1715,7 @@ function powerUps() {
 	} else {
 		if (buff == "gigaCube" && !colour) co = "_big";
 		else if (buff == "gigaCube" && colour) co = "_bigNoFace";
+		else if (expertMode) co = "_vex"
 		else co = "";
 	}
 }
@@ -2128,7 +2127,7 @@ function displayStats() {
 			var yrel = camera.y; //y relative
 			//These are the current game stats: stage, score, hp, boxes, broke, hits, squash, dista, jumps, quake, resets
 			var allStatsKeys = ["Stage", (speedMode ? "Highest Combo" : "Score"), "Health Points", "Hits Taken", "Boxes Left", "Boxes Broke", "Foes Left", "Foes Squashed", "Steps Moved", "Jumps Made", "Quake Rating", "Resets/Skips", "Explosions", "Bonuses", "Power ups"];
-			var allStatsValues = [stage, (speedMode ? topcombo : floor(score * 100 * (expertMode * 4 + 1))), hp, hits, boxes, broke, bads.length + thorns.length + shooters.length + savedBads.length + savedThorns.length + savedEyes.length, squash, floor(dista / 48), jumps, floor(quake * 10), resets, explosions, bonuses, powerups];
+			var allStatsValues = [stage, (speedMode ? topcombo : floor(score * 100 * (expertMode * 15 + 1))), hp, hits, boxes, broke, bads.length + thorns.length + shooters.length + savedBads.length + savedThorns.length + savedEyes.length, squash, floor(dista / 48), jumps, floor(quake * 10), resets, explosions, bonuses, powerups];
 			if (inTutorial) {
 				allStatsKeys = [
 				"Basic movement", "Wall jumping", "Quaking the ground", "Moving quickly",
@@ -2244,7 +2243,7 @@ function recordData() { //this function records the in game variables to the all
 	} else {
 		topstage = max(topstage, stage); //stage record
 		//highscore management
-		var actualScore = floor(score * 100 * (expertMode * 4 + 1));
+		var actualScore = floor(score * 100 * (expertMode * 15 + 1));
 		highscores.push(actualScore); //now there are 11 items in the array
 		highscores.sort(function(a, b) {
 			return b - a;
@@ -2420,6 +2419,7 @@ function soundManagement() {
 		stopSound("sounds/bloquake-menu-soundtrack.mp3");
 		stopSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3");
 		stopSound("sounds/Nature-Cube-Vintage.mp3");
+		stopSound("sounds/vip8.mp3");
 		once7 = 1;
 		note.visible = true;
 		hasMuted = true;
@@ -2432,7 +2432,11 @@ function soundManagement() {
 			} else if (themeNum == 1) {
 				playSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3", true); //music thanks to of BC mix music
 			} else {
-				playSound("sounds/Nature-Cube-Vintage.mp3", true);
+				if (!expertMode) {
+					playSound("sounds/Nature-Cube-Vintage.mp3", true);
+				} else {
+					playSound("sounds/vip8.mp3", true);
+				}
 			}
 		} else {
 			playSound("sounds/bloquake-menu-soundtrack.mp3", true);
@@ -2502,7 +2506,7 @@ function screenText() {
 		}
 
 		//gui text (score, stage count and box count)
-		var actScore = floor(score * 100 * (expertMode * 4 + 1));
+		var actScore = floor(score * 100 * (expertMode * 15 + 1));
 		var stageGui = stage;
 		if (inTutorial) {
 			if (!speedMode) actScore = lessonName[lesson]; //the score is replaced with lesson name in the tutorial
@@ -2668,6 +2672,7 @@ function draw() {
 		stopSound("sounds/Nature-Cube-Bloquake-OST.mp3");
 		stopSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3");
 		stopSound("sounds/Nature-Cube-Vintage.mp3");
+		stopSound("sounds/vip8.mp3");
 		if (movingBack == true) backToMenu();
 	}
 	transition();
@@ -3807,7 +3812,11 @@ function vault() {
 				if (costumes && colour) {
 					icon.setAnimation(ima + "cube" + look);
 				} else {
-					icon.setAnimation(ima + "cube");
+					if (expertMode) {
+						icon.setAnimation(ima + "cube_vex");
+					} else {
+						icon.setAnimation(ima + "cube");
+					}
 				}
 				icon.scale = 1.1;
 				icon.depth = 26;
@@ -4069,9 +4078,13 @@ function transition() {
 					text(speedmodeTips[helptip], camera.x, camera.y);
 				} else {
 					if (!playing) {
-						text(expertMode ? "Achievements can't be earned in Expert Mode" : tips[helptip], camera.x, camera.y);
+						if (!colour) {
+							text(expertMode ? "The true bloquake experience..." : tips[helptip], camera.x, camera.y);
+						} else {
+							text(expertMode ? "Achievements can't be earned in Expert Mode" : tips[helptip], camera.x, camera.y);
+						}
 					} else {
-						text(expertMode ? "Your score is multiplied by 5 in Expert Mode" : bye[byetip], camera.x, camera.y);
+						text(expertMode ? "Your score is multiplied by 16 in Expert Mode" : bye[byetip], camera.x, camera.y);
 						achBar.visible = false;
 					}
 				}
@@ -4122,6 +4135,7 @@ function transition() {
 			stopSound("sounds/Nature-Cube-Bloquake-OST.mp3");
 			stopSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3");
 			stopSound("sounds/Nature-Cube-Vintage.mp3");
+			stopSound("sounds/vip8.mp3");
 			//if they were clicking then stop the clicking cycle
 			clicking = false;
 			if (!colour) statsbg.visible = true;
@@ -4173,7 +4187,12 @@ function onSwitch(mode) { //when switching from ingame to menu do this once
 		} else if (themeNum == 1) {
 			playSound("sounds/Nature-Cube-Night-Theme-Bloquake-OST.mp3", true); //music thanks to of BC mix music
 		} else {
-			playSound("sounds/Nature-Cube-Vintage.mp3", true);
+			if (!expertMode) {
+				playSound("sounds/Nature-Cube-Vintage.mp3", true);
+			} else {
+				playSound("sounds/vip8.mp3", true);
+			}
+			
 		}
 		playing = true;
 		title.visible = false;
@@ -4515,7 +4534,7 @@ function achievementWatchers() {
 					"Destroy 100 Thorn-Heads in total", "Destroy 1000 Bad Cubes in total", "Destroy 100 foes before stage 20", "Destroy 50 Evil Eyes in total", "Reach stage 15", "Reach stage 30", "Reach stage 50", "Reach stage 75", 
 					"Reach a total quake rating of 2,500", "Reach stage 15 without getting hit", "Get hit a total of 1,000 times", "Jump 1,000 times in total", "Just sit and wait", "How high can you go?", "Break 100 buff boxes total", 
 					"Break 200 boom boxes total", "Break 300 bonus boxes total", "Reach stage 20 without using a power up", "Reach stage 35 without resetting", "Get game over on stage 1", "Have 20 foes present at once", 
-					"Destroy an Evil Eye past stage 29", ":)", "???", "Reach stage 100", "Reach stage 30 without getting hit", "Break a total of 50,000 boxes", "Destroy a total of 10,000 enemies", "Score 3,000,000 before stage 50",
+					"Destroy an Evil Eye past stage 29", ":)", "???", "Reach stage 100", "Reach stage 30 without getting hit", "Break a total of 25,000 boxes", "Destroy a total of 10,000 enemies", "Score 3,000,000 before stage 50",
 					"Reach stage 20 in speed mode", "Reach stage 40 in speed mode", "Reach stage 60 in speed mode", "Reach stage 80 in speed mode", "Reach stage 100 in speed mode",
 					"Get a 100 combo in speed mode", "Get a 200 combo in speed mode", "Get a 500 combo in speed mode", "Get a 1000 combo in speed mode", "Achieve ultra speed", "Game over in speed mode with time left",
 					"Reach stage 25 without passing a 100 combo", "Reach stage 25 without losing your combo", "Make the Timer go from 100 to 100000", "Reset 4 times in a row while airbound", "The true tutorial"];
